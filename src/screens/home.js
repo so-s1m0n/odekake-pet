@@ -5,8 +5,8 @@
  */
 
 import { applyCareAction, PET_STATE, isAtHome } from '../domain/pet.js';
-import { loadPet, savePet } from '../store.js';
-import { goOdekake, goAlbum } from '../router.js';
+import { loadPet, savePet, loadVisitsAll } from '../store.js';
+import { goOdekake, goWaiting, goAlbum } from '../router.js';
 
 // ─────────────────────────────────────────────
 // 定数
@@ -61,6 +61,9 @@ export function initHomeScreen() {
       goAlbum();
     });
   }
+
+  // おもいで数を表示する（訪問履歴の件数）
+  renderMemoriesCount();
 
   renderPet(pet);
 }
@@ -150,24 +153,70 @@ function renderCareActions(pet) {
 
 /**
  * おでかけ中の状態表示を更新する。
- * state === 'visiting' または 'returning' のとき「おでかけ中」バナーを表示する。
+ * - state === 'visiting': 「おでかけ中」バナーを表示し、「旅の途中を見る」ボタンも表示する
+ * - state === 'returning': 「おでかけ中」バナーのみ表示（帰宅処理済みのため途中ボタンは非表示）
+ * - それ以外（home）: バナーを非表示にし、おでかけボタンを有効化する
  *
  * @param {import('../domain/pet.js').Pet} pet
  */
 function renderOdekakeStatus(pet) {
-  const petRoom  = document.getElementById('pet-room');
-  const banner   = document.getElementById('away-banner');
-  const odekakeBtn = document.getElementById('odekake-btn');
-  const awayMsg  = document.getElementById('away-message');
+  const petRoom      = document.getElementById('pet-room');
+  const banner       = document.getElementById('away-banner');
+  const odekakeBtn   = document.getElementById('odekake-btn');
+  const awayMsg      = document.getElementById('away-message');
 
-  const isAway = !isAtHome(pet);
+  const isAway       = !isAtHome(pet);
+  const isVisiting   = pet.state === PET_STATE.VISITING;
 
-  if (petRoom)    petRoom.classList.toggle('is-away', isAway);
+  // ペットルームの is-away クラスを切り替える
+  if (petRoom) petRoom.classList.toggle('is-away', isAway);
+
+  // おでかけ中バナーの表示切り替え
   if (banner)     banner.hidden = !isAway;
+
+  // おでかけボタンの活性/非活性
   if (odekakeBtn) odekakeBtn.disabled = isAway;
+
+  // おでかけ中メッセージ
   if (awayMsg && isAway) {
     awayMsg.textContent = `${pet.name}は おでかけ中...`;
   }
+
+  // 「旅の途中を見る」ボタン: visiting 状態のときだけ表示する
+  const existingWaitingBtn = document.getElementById('waiting-link-btn');
+
+  if (isVisiting) {
+    // ボタンが未作成なら生成して挿入する
+    if (!existingWaitingBtn) {
+      const waitingBtn = document.createElement('button');
+      waitingBtn.id        = 'waiting-link-btn';
+      waitingBtn.className = 'btn btn--waiting-link';
+      waitingBtn.textContent = '旅の途中を見る 🔍';
+      waitingBtn.setAttribute('aria-label', 'おでかけ中のペットの様子を見る');
+      waitingBtn.addEventListener('click', () => goWaiting());
+
+      // おでかけボタンの直後に挿入する
+      if (odekakeBtn && odekakeBtn.parentNode) {
+        odekakeBtn.parentNode.insertBefore(waitingBtn, odekakeBtn.nextSibling);
+      }
+    }
+  } else {
+    // 在宅 or returning: ボタンが存在していれば削除する
+    if (existingWaitingBtn) {
+      existingWaitingBtn.remove();
+    }
+  }
+}
+
+/**
+ * おもいで数（完了済みVisitの件数）を画面に表示する。
+ * #memories-count 要素が存在する場合に更新する。
+ */
+function renderMemoriesCount() {
+  const countEl = document.getElementById('memories-count');
+  if (!countEl) return;
+  const count = loadVisitsAll().length;
+  countEl.textContent = String(count);
 }
 
 /**

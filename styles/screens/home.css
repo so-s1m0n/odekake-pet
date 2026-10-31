@@ -1,0 +1,294 @@
+/*
+ * styles/screens/home.css
+ * ホーム画面（screen-home）固有のスタイル
+ * base.css / layout.css / components.css を前提とし、重複する定義は置かない
+ */
+
+/* ─────────────────────────────────────────────
+   ペットの部屋
+   ───────────────────────────────────────────── */
+
+/* ペットイラストとバナーをまとめるコンテナ */
+.pet-room {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-5);
+  overflow: hidden;
+}
+
+/* おでかけ中の薄暗い演出 */
+.pet-room.is-away {
+  background-color: #e8e4de;
+}
+
+/* ─────────────────────────────────────────────
+   ペットスプライト
+   ───────────────────────────────────────────── */
+
+/* JSが <template> を clone して挿入するコンテナ */
+.pet-room__sprite {
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG要素自体のサイズ調整 */
+.pet-room__sprite svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─────────────────────────────────────────────
+   おでかけ中バナー
+   ───────────────────────────────────────────── */
+
+/* 「○○はおでかけ中...」バナーのオーバーレイ */
+.away-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(248, 243, 236, 0.75);
+  border-radius: inherit;
+}
+
+/* バナーのメッセージテキスト */
+.away-banner__message {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-sub);
+  font-style: italic;
+  text-align: center;
+  padding: 0 var(--space-4);
+}
+
+/* ─────────────────────────────────────────────
+   ペットステータス（名前・なかよし度）
+   ───────────────────────────────────────────── */
+
+/* 名前となかよし度バーを縦に並べるラッパー */
+.pet-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+/* ペット名テキスト */
+.pet-status__name {
+  font-size: var(--font-size-xl);
+  font-weight: bold;
+  color: var(--color-text);
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────
+   なかよし度バー
+   ───────────────────────────────────────────── */
+
+/* ラベル・メーター・数値を横一行に並べるコンテナ */
+.affinity-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* 「なかよし」ラベル */
+.affinity-bar__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  flex-shrink: 0;
+}
+
+/* <meter> 要素のスタイル（ブラウザデフォルトを上書き） */
+.affinity-bar__meter {
+  flex: 1;
+  height: 10px;
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: var(--color-disabled-bg);
+  overflow: hidden;
+}
+
+/* WebKit系（Chrome / Safari）のメーターバー色 */
+.affinity-bar__meter::-webkit-meter-bar {
+  background: var(--color-disabled-bg);
+  border: none;
+  border-radius: var(--radius-full);
+}
+
+.affinity-bar__meter::-webkit-meter-optimum-value {
+  background: var(--color-affinity);
+  border-radius: var(--radius-full);
+}
+
+/* Firefox のメーターバー色 */
+.affinity-bar__meter::-moz-meter-bar {
+  background: var(--color-affinity);
+  border-radius: var(--radius-full);
+}
+
+/* なかよし度の数値 */
+.affinity-bar__value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  flex-shrink: 0;
+  min-width: 2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────
+   世話アクションボタン群
+   ───────────────────────────────────────────── */
+
+/* ボタンを横並びに配置するコンテナ */
+.care-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  margin-bottom: var(--space-5);
+}
+
+/* 個々の世話ボタン */
+.care-btn {
+  flex: 1;
+  max-width: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.care-btn:not(:disabled):hover {
+  border-color: var(--color-accent);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-sm);
+}
+
+.care-btn:not(:disabled):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.care-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* 非活性状態 */
+.care-btn:disabled {
+  background-color: var(--color-disabled-bg);
+  border-color: var(--color-border);
+  color: var(--color-disabled-text);
+}
+
+/* ボタン内のアイコン絵文字 */
+.care-btn__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+/* ボタン内のラベルテキスト */
+.care-btn__label {
+  font-size: var(--font-size-sm);
+}
+
+/* ─────────────────────────────────────────────
+   おでかけボタン
+   ───────────────────────────────────────────── */
+
+/* 「おでかけへ ✈」ボタン（btn--primary を継承し追加スタイルのみ） */
+.btn--odekake {
+  width: 100%;
+  font-size: var(--font-size-lg);
+}
+
+/* ─────────────────────────────────────────────
+   旅の途中を見るボタン（おでかけ中のみ表示）
+   ───────────────────────────────────────────── */
+
+/* 「旅の途中を見る」リンク風ボタン */
+.btn--waiting-link {
+  width: 100%;
+  font-size: var(--font-size-base);
+  color: var(--color-accent-dark);
+  background-color: var(--color-surface-alt);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  transition:
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  margin-top: var(--space-3);
+}
+
+.btn--waiting-link:hover {
+  background-color: #dff5f2; /* アクセントカラーの淡い背景 */
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--waiting-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   ヘッダーのアルバムリンク
+   ───────────────────────────────────────────── */
+
+/* ヘッダー右端の「アルバム」テキストリンク */
+.screen__album-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.screen__album-link:hover,
+.screen__album-link:focus-visible {
+  color: var(--color-primary);
+  background-color: var(--color-surface-alt);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   おもいで数バッジ
+   ───────────────────────────────────────────── */
+
+/* 「おもいで: N件」を表示するバッジ */
+.memories-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* バッジ内の件数強調 */
+.memories-badge__count {
+  font-weight: bold;
+  color: var(--color-text);
+}
