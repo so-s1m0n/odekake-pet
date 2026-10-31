@@ -1,0 +1,31 @@
+{
+  "petTypes": [
+    {
+      "id": "hoshikuzu-usagi",
+      "displayName": "ほしくずうさぎ",
+      "description": "星のかけらをあつめる、ふしぎなうさぎ。好奇心おうせいで、いろんな場所に顔を出す。",
+      "personality": {
+        "curiosity":   [0.2, 0.3, 0.5],
+        "sociability": [0.4, 0.4, 0.2]
+      }
+    },
+    {
+      "id": "soraaru-penguin",
+      "displayName": "そらあるきペンギン",
+      "description": "空を歩くことができる、のんびりやのペンギン。おともだちをつくるのが得意。",
+      "personality": {
+        "curiosity":   [0.3, 0.5, 0.2],
+        "sociability": [0.1, 0.3, 0.6]
+      }
+    },
+    {
+      "id": "mameshiba",
+      "displayName": "まめしば",
+      "description": "ちいさなからだに、おおきなこころ。マイペースだけど、じつは人なつっこい。",
+      "personality": {
+        "curiosity":   [0.4, 0.4, 0.2],
+        "sociability": [0.3, 0.4, 0.3]
+      }
+    }
+  ]
+}

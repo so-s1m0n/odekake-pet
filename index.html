@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="おでかけペット — ペットと一緒に、小さなおでかけを。">
+  <title>おでかけペット</title>
+
+  <!-- ─── スタイルシート（base → layout → components → 画面固有の順） ─── -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/screens/setup.css">
+  <link rel="stylesheet" href="styles/screens/home.css">
+
+  <!-- アプリのエントリポイント（ES Modules） -->
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════
+       ペット登録画面 — screen-setup
+  ════════════════════════════════════════════ -->
+  <section id="screen-setup" class="screen" hidden>
+    <header class="screen__header">
+      <h1 class="screen__title">ペットをえらぶ</h1>
+    </header>
+
+    <main class="screen__body">
+
+      <!-- プリセットカード一覧 -->
+      <div class="preset-list" role="radiogroup" aria-label="ペットの種類">
+
+        <button
+          class="preset-card js-preset-card"
+          data-pet-type="hoshikuzu-usagi"
+          role="radio"
+          aria-checked="false"
+          aria-label="ほしくずうさぎ"
+          tabindex="0"
+        >
+          <div class="preset-card__art" aria-hidden="true">
+            <!-- idle SVG をインラインで表示（プレビュー用） -->
+            <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- ほしくずうさぎ — idle（プレースホルダー） -->
+              <ellipse cx="60" cy="80" rx="32" ry="28" fill="#e8d5f0"/>
+              <ellipse cx="60" cy="52" rx="22" ry="22" fill="#e8d5f0"/>
+              <!-- 耳 -->
+              <ellipse cx="46" cy="28" rx="8" ry="18" fill="#e8d5f0"/>
+              <ellipse cx="74" cy="28" rx="8" ry="18" fill="#e8d5f0"/>
+              <ellipse cx="46" cy="28" rx="4" ry="13" fill="#f5c2e0"/>
+              <ellipse cx="74" cy="28" rx="4" ry="13" fill="#f5c2e0"/>
+              <!-- 目 -->
+              <circle cx="53" cy="50" r="3" fill="#6a3a7a"/>
+              <circle cx="67" cy="50" r="3" fill="#6a3a7a"/>
+              <circle cx="54" cy="49" r="1" fill="#fff"/>
+              <circle cx="68" cy="49" r="1" fill="#fff"/>
+              <!-- 星 -->
+              <text x="58" y="68" font-size="10" fill="#c78fff" text-anchor="middle">✦</text>
+            </svg>
+          </div>
+          <span class="preset-card__name">ほしくずうさぎ</span>
+          <span class="preset-card__check" aria-hidden="true">✓</span>
+        </button>
+
+        <button
+          class="preset-card js-preset-card"
+          data-pet-type="soraaru-penguin"
+          role="radio"
+          aria-checked="false"
+          aria-label="そらあるペンギン"
+          tabindex="0"
+        >
+          <div class="preset-card__art" aria-hidden="true">
+            <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- そらあるペンギン — idle（プレースホルダー） -->
+              <ellipse cx="60" cy="78" rx="28" ry="34" fill="#3a4a6a"/>
+              <ellipse cx="60" cy="62" rx="16" ry="16" fill="#3a4a6a"/>
+              <!-- おなか -->
+              <ellipse cx="60" cy="82" rx="18" ry="22" fill="#e8f0ff"/>
+              <!-- 目 -->
+              <circle cx="54" cy="58" r="4" fill="#fff"/>
+              <circle cx="66" cy="58" r="4" fill="#fff"/>
+              <circle cx="55" cy="59" r="2" fill="#1a1a2e"/>
+              <circle cx="67" cy="59" r="2" fill="#1a1a2e"/>
+              <!-- くちばし -->
+              <polygon points="60,64 56,68 64,68" fill="#ffb347"/>
+              <!-- 翼 -->
+              <ellipse cx="36" cy="76" rx="8" ry="16" fill="#3a4a6a" transform="rotate(-15,36,76)"/>
+              <ellipse cx="84" cy="76" rx="8" ry="16" fill="#3a4a6a" transform="rotate(15,84,76)"/>
+            </svg>
+          </div>
+          <span class="preset-card__name">そらあるペンギン</span>
+          <span class="preset-card__check" aria-hidden="true">✓</span>
+        </button>
+
+        <button
+          class="preset-card js-preset-card"
+          data-pet-type="mameshiba"
+          role="radio"
+          aria-checked="false"
+          aria-label="まめしば"
+          tabindex="0"
+        >
+          <div class="preset-card__art" aria-hidden="true">
+            <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- まめしば — idle（プレースホルダー） -->
+              <ellipse cx="60" cy="82" rx="30" ry="26" fill="#c8874a"/>
+              <ellipse cx="60" cy="56" rx="24" ry="22" fill="#c8874a"/>
+              <!-- 耳 -->
+              <ellipse cx="44" cy="38" rx="10" ry="12" fill="#c8874a"/>
+              <ellipse cx="76" cy="38" rx="10" ry="12" fill="#c8874a"/>
+              <!-- 顔のもよう -->
+              <ellipse cx="60" cy="60" rx="14" ry="10" fill="#e8c090"/>
+              <!-- 目 -->
+              <circle cx="53" cy="52" r="4" fill="#2a1a0a"/>
+              <circle cx="67" cy="52" r="4" fill="#2a1a0a"/>
+              <circle cx="54" cy="51" r="1.5" fill="#fff"/>
+              <circle cx="68" cy="51" r="1.5" fill="#fff"/>
+              <!-- 鼻 -->
+              <ellipse cx="60" cy="59" rx="4" ry="3" fill="#2a1a0a"/>
+            </svg>
+          </div>
+          <span class="preset-card__name">まめしば</span>
+          <span class="preset-card__check" aria-hidden="true">✓</span>
+        </button>
+
+      </div><!-- /.preset-list -->
+
+      <!-- ペットのプレビューエリア（選択後にSVGが挿入される） -->
+      <div id="setup-preview-container" class="setup-preview" aria-live="polite"></div>
+
+      <!-- 名前入力 -->
+      <div class="name-input-group">
+        <label for="pet-name-input" class="name-input-group__label">なまえ</label>
+        <input
+          type="text"
+          id="pet-name-input"
+          class="name-input-group__input"
+          maxlength="12"
+          placeholder="1〜12文字で入力"
+          autocomplete="off"
+          aria-describedby="pet-name-count"
+        >
+        <span id="pet-name-count" class="name-input-group__count" aria-live="polite">0/12</span>
+      </div>
+
+      <!-- 確定ボタン -->
+      <button
+        id="setup-confirm-btn"
+        class="btn btn--primary"
+        disabled
+        aria-disabled="true"
+      >
+        このこにする！
+      </button>
+
+    </main>
+  </section><!-- /#screen-setup -->
+
+
+  <!-- ════════════════════════════════════════════
+       ホーム画面 — screen-home
+  ════════════════════════════════════════════ -->
+  <section id="screen-home" class="screen" hidden>
+    <header class="screen__header">
+      <h1 class="screen__title">おへや</h1>
+      <a
+        id="album-link"
+        href="#album"
+        class="screen__album-link"
+        aria-label="おもいでアルバムを見る"
+      >アルバム</a>
+    </header>
+
+    <main class="screen__body">
+
+      <!-- ペットの部屋（イラスト＋おでかけ中バナー） -->
+      <div id="pet-room" class="pet-room">
+
+        <!-- おでかけ中バナー（state が visiting/returning のとき表示） -->
+        <div id="away-banner" class="away-banner" hidden>
+          <p id="away-message" class="away-banner__message"></p>
+        </div>
+
+        <!-- ペットのSVGスプライトが挿入されるコンテナ -->
+        <div
+          id="pet-sprite-container"
+          class="pet-room__sprite"
+          aria-live="polite"
+          aria-label="ペットのイラスト"
+        ></div>
+
+      </div><!-- /#pet-room -->
+
+      <!-- ペット名となかよし度 -->
+      <div class="pet-status">
+        <p id="pet-name-display" class="pet-status__name"></p>
+        <div class="pet-status__affinity affinity-bar" role="group" aria-label="なかよし度">
+          <span class="affinity-bar__label">なかよし</span>
+          <meter
+            id="affinity-progress"
+            class="affinity-bar__meter"
+            min="0"
+            max="99"
+            value="0"
+            aria-label="なかよし度"
+          ></meter>
+          <span id="affinity-value" class="affinity-bar__value">0</span>
+        </div>
+      </div>
+
+      <!-- 世話アクションボタン群 -->
+      <div id="care-actions" class="care-actions" role="group" aria-label="お世話">
+        <button
+          class="care-btn js-care-btn"
+          data-action="eat"
+          aria-label="えさをあげる"
+          disabled
+        >
+          <span class="care-btn__icon" aria-hidden="true">🍙</span>
+          <span class="care-btn__label">えさ</span>
+        </button>
+        <button
+          class="care-btn js-care-btn"
+          data-action="stroke"
+          aria-label="なでる"
+          disabled
+        >
+          <span class="care-btn__icon" aria-hidden="true">🤲</span>
+          <span class="care-btn__label">なでる</span>
+        </button>
+        <button
+          class="care-btn js-care-btn"
+          data-action="speak"
+          aria-label="声をかける"
+          disabled
+        >
+          <span class="care-btn__icon" aria-hidden="true">💬</span>
+          <span class="care-btn__label">こえかけ</span>
+        </button>
+      </div><!-- /#care-actions -->
+
+      <!-- おでかけボタン -->
+      <button
+        id="odekake-btn"
+        class="btn btn--primary btn--odekake"
+        aria-label="おでかけに連れて行く"
+      >
+        おでかけへ ✈
+      </button>
+
+    </main>
+  </section><!-- /#screen-home -->
+
+
+  <!-- ════════════════════════════════════════════
+       SVGテンプレート定義
+       （DOMに直接描画されない。cloneNode(true) で複製して使う）
+  ════════════════════════════════════════════ -->
+
+  <!-- ─── ほしくずうさぎ ─── -->
+  <template id="pet-svg-hoshikuzu-usagi-idle">
+    <svg class="pet-svg pet-svg--idle" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ほしくずうさぎ（おやすみ）">
+      <!-- 体 -->
+      <ellipse cx="100" cy="140" rx="52" ry="44" fill="#e8d5f0"/>
+      <!-- 頭 -->
+      <ellipse cx="100" cy="90" rx="38" ry="36" fill="#e8d5f0"/>
+      <!-- 耳（左） -->
+      <ellipse cx="76" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="76" cy="44" rx="7" ry="22" fill="#f5c2e0"/>
+      <!-- 耳（右） -->
+      <ellipse cx="124" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="124" cy="44" rx="7" ry="22" fill="#f5c2e0"/>
+      <!-- 目 -->
+      <circle cx="88" cy="86" r="5" fill="#6a3a7a"/>
+      <circle cx="112" cy="86" r="5" fill="#6a3a7a"/>
+      <circle cx="90" cy="84" r="2" fill="#fff"/>
+      <circle cx="114" cy="84" r="2" fill="#fff"/>
+      <!-- 口 -->
+      <path d="M96 98 Q100 103 104 98" stroke="#6a3a7a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- 星飾り -->
+      <text x="100" y="130" font-size="16" fill="#c78fff" text-anchor="middle">✦</text>
+      <text x="62" y="110" font-size="10" fill="#dbb8ff" text-anchor="middle">✦</text>
+      <text x="140" y="116" font-size="8" fill="#dbb8ff" text-anchor="middle">✦</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-hoshikuzu-usagi-eat">
+    <svg class="pet-svg pet-svg--eat" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ほしくずうさぎ（えさ）">
+      <ellipse cx="100" cy="140" rx="52" ry="44" fill="#e8d5f0"/>
+      <ellipse cx="100" cy="90" rx="38" ry="36" fill="#e8d5f0"/>
+      <ellipse cx="76" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="76" cy="44" rx="7" ry="22" fill="#f5c2e0"/>
+      <ellipse cx="124" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="124" cy="44" rx="7" ry="22" fill="#f5c2e0"/>
+      <!-- 閉じ目（食べてる） -->
+      <path d="M83 86 Q88 90 93 86" stroke="#6a3a7a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M107 86 Q112 90 117 86" stroke="#6a3a7a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- 口（むぐむぐ） -->
+      <ellipse cx="100" cy="100" rx="8" ry="6" fill="#f5c2e0"/>
+      <!-- えさ -->
+      <text x="116" y="115" font-size="20" text-anchor="middle">🍙</text>
+      <text x="100" y="130" font-size="16" fill="#c78fff" text-anchor="middle">✦</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-hoshikuzu-usagi-stroke">
+    <svg class="pet-svg pet-svg--stroke" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ほしくずうさぎ（なでられる）">
+      <ellipse cx="100" cy="140" rx="52" ry="44" fill="#e8d5f0"/>
+      <ellipse cx="100" cy="90" rx="38" ry="36" fill="#f0e0ff"/>
+      <ellipse cx="76" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="76" cy="44" rx="7" ry="22" fill="#f8d0ec"/>
+      <ellipse cx="124" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="124" cy="44" rx="7" ry="22" fill="#f8d0ec"/>
+      <!-- ほっぺ赤 -->
+      <ellipse cx="82" cy="96" rx="8" ry="6" fill="#ffb3cc" opacity="0.6"/>
+      <ellipse cx="118" cy="96" rx="8" ry="6" fill="#ffb3cc" opacity="0.6"/>
+      <!-- 目（細め） -->
+      <path d="M83 86 Q88 89 93 86" stroke="#6a3a7a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M107 86 Q112 89 117 86" stroke="#6a3a7a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- ハート -->
+      <text x="100" y="60" font-size="18" text-anchor="middle">💜</text>
+      <text x="100" y="130" font-size="16" fill="#c78fff" text-anchor="middle">✦</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-hoshikuzu-usagi-speak">
+    <svg class="pet-svg pet-svg--speak" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ほしくずうさぎ（声かけ）">
+      <ellipse cx="100" cy="140" rx="52" ry="44" fill="#e8d5f0"/>
+      <ellipse cx="100" cy="90" rx="38" ry="36" fill="#e8d5f0"/>
+      <ellipse cx="76" cy="44" rx="13" ry="30" fill="#e8d5f0"/>
+      <ellipse cx="76" cy="44" rx="7" ry="22" fill="#f5c2e0"/>
+      <!-- 耳（片方ぴん） -->
+      <ellipse cx="124" cy="38" rx="13" ry="30" fill="#e8d5f0" transform="rotate(-8,124,38)"/>
+      <ellipse cx="124" cy="38" rx="7" ry="22" fill="#f5c2e0" transform="rotate(-8,124,38)"/>
+      <!-- 目（キラキラ） -->
+      <circle cx="88" cy="86" r="6" fill="#7a44a0"/>
+      <circle cx="112" cy="86" r="6" fill="#7a44a0"/>
+      <circle cx="91" cy="83" r="2.5" fill="#fff"/>
+      <circle cx="115" cy="83" r="2.5" fill="#fff"/>
+      <!-- 吹き出し -->
+      <rect x="116" y="48" width="52" height="28" rx="8" fill="#fff" stroke="#c78fff" stroke-width="2"/>
+      <polygon points="124,76 130,88 136,76" fill="#fff" stroke="#c78fff" stroke-width="2" stroke-linejoin="round"/>
+      <text x="142" y="67" font-size="11" fill="#6a3a7a" text-anchor="middle">♪〜</text>
+      <text x="100" y="130" font-size="16" fill="#c78fff" text-anchor="middle">✦</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-hoshikuzu-usagi-away">
+    <svg class="pet-svg pet-svg--away" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ほしくずうさぎ（おでかけ中）">
+      <!-- シルエット（薄い） -->
+      <ellipse cx="100" cy="140" rx="52" ry="44" fill="#d4b8e8" opacity="0.4"/>
+      <ellipse cx="100" cy="90" rx="38" ry="36" fill="#d4b8e8" opacity="0.4"/>
+      <ellipse cx="76" cy="44" rx="13" ry="30" fill="#d4b8e8" opacity="0.4"/>
+      <ellipse cx="124" cy="44" rx="13" ry="30" fill="#d4b8e8" opacity="0.4"/>
+      <!-- 点線の輪郭 -->
+      <ellipse cx="100" cy="90" rx="38" ry="36" fill="none" stroke="#c78fff" stroke-width="2" stroke-dasharray="6 4" opacity="0.6"/>
+      <!-- 旅立ちの星 -->
+      <text x="100" y="98" font-size="28" text-anchor="middle" opacity="0.5">✦</text>
+      <!-- テキスト -->
+      <text x="100" y="176" font-size="12" fill="#9a6abf" text-anchor="middle">おでかけ中…</text>
+    </svg>
+  </template>
+
+
+  <!-- ─── そらあるペンギン ─── -->
+  <template id="pet-svg-soraaru-penguin-idle">
+    <svg class="pet-svg pet-svg--idle" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="そらあるペンギン（おやすみ）">
+      <!-- 体 -->
+      <ellipse cx="100" cy="138" rx="46" ry="52" fill="#3a4a6a"/>
+      <!-- おなか -->
+      <ellipse cx="100" cy="148" rx="30" ry="36" fill="#e8f0ff"/>
+      <!-- 頭 -->
+      <ellipse cx="100" cy="78" rx="34" ry="30" fill="#3a4a6a"/>
+      <!-- 目（白め） -->
+      <circle cx="88" cy="72" r="8" fill="#fff"/>
+      <circle cx="112" cy="72" r="8" fill="#fff"/>
+      <circle cx="90" cy="74" r="4" fill="#1a1a2e"/>
+      <circle cx="114" cy="74" r="4" fill="#1a1a2e"/>
+      <circle cx="91" cy="72" r="1.5" fill="#fff"/>
+      <circle cx="115" cy="72" r="1.5" fill="#fff"/>
+      <!-- くちばし -->
+      <polygon points="100,82 92,92 108,92" fill="#ffb347"/>
+      <!-- 翼 -->
+      <ellipse cx="60" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(-15,60,134)"/>
+      <ellipse cx="140" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(15,140,134)"/>
+      <!-- 空のアクセント -->
+      <text x="100" y="58" font-size="12" fill="#a0c0ff" text-anchor="middle">☁</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-soraaru-penguin-eat">
+    <svg class="pet-svg pet-svg--eat" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="そらあるペンギン（えさ）">
+      <ellipse cx="100" cy="138" rx="46" ry="52" fill="#3a4a6a"/>
+      <ellipse cx="100" cy="148" rx="30" ry="36" fill="#e8f0ff"/>
+      <ellipse cx="100" cy="78" rx="34" ry="30" fill="#3a4a6a"/>
+      <circle cx="88" cy="72" r="8" fill="#fff"/>
+      <circle cx="112" cy="72" r="8" fill="#fff"/>
+      <!-- 閉じ目 -->
+      <path d="M82 72 Q88 76 94 72" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M106 72 Q112 76 118 72" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- くちばし（開いてる） -->
+      <polygon points="100,82 90,96 110,96" fill="#ffb347"/>
+      <ellipse cx="100" cy="93" rx="8" ry="5" fill="#cc8820"/>
+      <ellipse cx="140" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(15,140,134)"/>
+      <ellipse cx="60" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(-15,60,134)"/>
+      <text x="120" y="106" font-size="20" text-anchor="middle">🐟</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-soraaru-penguin-stroke">
+    <svg class="pet-svg pet-svg--stroke" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="そらあるペンギン（なでられる）">
+      <ellipse cx="100" cy="138" rx="46" ry="52" fill="#3a4a6a"/>
+      <ellipse cx="100" cy="148" rx="30" ry="36" fill="#e8f0ff"/>
+      <ellipse cx="100" cy="78" rx="34" ry="30" fill="#4a5a7a"/>
+      <!-- ほっぺ -->
+      <ellipse cx="80" cy="82" rx="9" ry="7" fill="#88aaff" opacity="0.5"/>
+      <ellipse cx="120" cy="82" rx="9" ry="7" fill="#88aaff" opacity="0.5"/>
+      <circle cx="88" cy="72" r="8" fill="#fff"/>
+      <circle cx="112" cy="72" r="8" fill="#fff"/>
+      <path d="M82 72 Q88 75 94 72" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M106 72 Q112 75 118 72" stroke="#1a1a2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <polygon points="100,82 92,92 108,92" fill="#ffb347"/>
+      <ellipse cx="60" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(-15,60,134)"/>
+      <ellipse cx="140" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(15,140,134)"/>
+      <text x="100" y="58" font-size="18" text-anchor="middle">💙</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-soraaru-penguin-speak">
+    <svg class="pet-svg pet-svg--speak" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="そらあるペンギン（声かけ）">
+      <ellipse cx="100" cy="138" rx="46" ry="52" fill="#3a4a6a"/>
+      <ellipse cx="100" cy="148" rx="30" ry="36" fill="#e8f0ff"/>
+      <ellipse cx="100" cy="78" rx="34" ry="30" fill="#3a4a6a"/>
+      <circle cx="88" cy="72" r="9" fill="#fff"/>
+      <circle cx="112" cy="72" r="9" fill="#fff"/>
+      <circle cx="90" cy="74" r="5" fill="#1a1a2e"/>
+      <circle cx="114" cy="74" r="5" fill="#1a1a2e"/>
+      <circle cx="91.5" cy="72.5" r="2" fill="#fff"/>
+      <circle cx="115.5" cy="72.5" r="2" fill="#fff"/>
+      <polygon points="100,82 92,92 108,92" fill="#ffb347"/>
+      <ellipse cx="60" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(-15,60,134)"/>
+      <ellipse cx="140" cy="134" rx="14" ry="26" fill="#2a3a5a" transform="rotate(15,140,134)"/>
+      <!-- 吹き出し -->
+      <rect x="114" y="44" width="56" height="28" rx="8" fill="#fff" stroke="#6688cc" stroke-width="2"/>
+      <polygon points="122,72 128,84 134,72" fill="#fff" stroke="#6688cc" stroke-width="2" stroke-linejoin="round"/>
+      <text x="142" y="63" font-size="11" fill="#3a4a6a" text-anchor="middle">クエ〜</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-soraaru-penguin-away">
+    <svg class="pet-svg pet-svg--away" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="そらあるペンギン（おでかけ中）">
+      <ellipse cx="100" cy="138" rx="46" ry="52" fill="#2a3a5a" opacity="0.4"/>
+      <ellipse cx="100" cy="148" rx="30" ry="36" fill="#c0d0f0" opacity="0.4"/>
+      <ellipse cx="100" cy="78" rx="34" ry="30" fill="#2a3a5a" opacity="0.4"/>
+      <ellipse cx="100" cy="78" rx="34" ry="30" fill="none" stroke="#6688cc" stroke-width="2" stroke-dasharray="6 4" opacity="0.6"/>
+      <text x="100" y="98" font-size="28" text-anchor="middle" opacity="0.5">☁</text>
+      <text x="100" y="176" font-size="12" fill="#6688cc" text-anchor="middle">おでかけ中…</text>
+    </svg>
+  </template>
+
+
+  <!-- ─── まめしば ─── -->
+  <template id="pet-svg-mameshiba-idle">
+    <svg class="pet-svg pet-svg--idle" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まめしば（おやすみ）">
+      <!-- 体 -->
+      <ellipse cx="100" cy="144" rx="50" ry="42" fill="#c8874a"/>
+      <!-- 頭 -->
+      <ellipse cx="100" cy="90" rx="40" ry="38" fill="#c8874a"/>
+      <!-- 耳（左） -->
+      <ellipse cx="72" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <!-- 耳（右） -->
+      <ellipse cx="128" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <!-- 顔のもよう（クリーム） -->
+      <ellipse cx="100" cy="96" rx="24" ry="18" fill="#e8c090"/>
+      <!-- おなかもよう -->
+      <ellipse cx="100" cy="150" rx="32" ry="28" fill="#e8c090"/>
+      <!-- 目 -->
+      <circle cx="87" cy="84" r="7" fill="#2a1a0a"/>
+      <circle cx="113" cy="84" r="7" fill="#2a1a0a"/>
+      <circle cx="89" cy="82" r="2.5" fill="#fff"/>
+      <circle cx="115" cy="82" r="2.5" fill="#fff"/>
+      <!-- 鼻 -->
+      <ellipse cx="100" cy="96" rx="6" ry="4.5" fill="#2a1a0a"/>
+      <!-- 口 -->
+      <path d="M94 102 Q100 107 106 102" stroke="#2a1a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- しっぽ -->
+      <ellipse cx="148" cy="148" rx="10" ry="14" fill="#c8874a" transform="rotate(30,148,148)"/>
+    </svg>
+  </template>
+
+  <template id="pet-svg-mameshiba-eat">
+    <svg class="pet-svg pet-svg--eat" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まめしば（えさ）">
+      <ellipse cx="100" cy="144" rx="50" ry="42" fill="#c8874a"/>
+      <ellipse cx="100" cy="90" rx="40" ry="38" fill="#c8874a"/>
+      <ellipse cx="72" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <ellipse cx="128" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <ellipse cx="100" cy="96" rx="24" ry="18" fill="#e8c090"/>
+      <ellipse cx="100" cy="150" rx="32" ry="28" fill="#e8c090"/>
+      <!-- 閉じ目（食べてる） -->
+      <path d="M80 84 Q87 89 94 84" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M106 84 Q113 89 120 84" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="100" cy="96" rx="6" ry="4.5" fill="#2a1a0a"/>
+      <!-- 口（むぐむぐ） -->
+      <ellipse cx="100" cy="106" rx="10" ry="7" fill="#e8c090"/>
+      <ellipse cx="148" cy="148" rx="10" ry="14" fill="#c8874a" transform="rotate(30,148,148)"/>
+      <!-- えさ -->
+      <text x="124" y="118" font-size="20" text-anchor="middle">🦴</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-mameshiba-stroke">
+    <svg class="pet-svg pet-svg--stroke" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まめしば（なでられる）">
+      <ellipse cx="100" cy="144" rx="50" ry="42" fill="#c8874a"/>
+      <ellipse cx="100" cy="90" rx="40" ry="38" fill="#c8874a"/>
+      <ellipse cx="72" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <!-- 耳（右）ぱたぱた -->
+      <ellipse cx="128" cy="52" rx="16" ry="18" fill="#c8874a" transform="rotate(-10,128,52)"/>
+      <ellipse cx="100" cy="96" rx="24" ry="18" fill="#e8c090"/>
+      <ellipse cx="100" cy="150" rx="32" ry="28" fill="#e8c090"/>
+      <!-- ほっぺ -->
+      <ellipse cx="80" cy="94" rx="10" ry="7" fill="#ffaa88" opacity="0.55"/>
+      <ellipse cx="120" cy="94" rx="10" ry="7" fill="#ffaa88" opacity="0.55"/>
+      <!-- 目（細め） -->
+      <path d="M80 84 Q87 87 94 84" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M106 84 Q113 87 120 84" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="100" cy="96" rx="6" ry="4.5" fill="#2a1a0a"/>
+      <path d="M94 102 Q100 107 106 102" stroke="#2a1a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="148" cy="148" rx="10" ry="14" fill="#c8874a" transform="rotate(30,148,148)"/>
+      <text x="100" y="62" font-size="18" text-anchor="middle">🧡</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-mameshiba-speak">
+    <svg class="pet-svg pet-svg--speak" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まめしば（声かけ）">
+      <ellipse cx="100" cy="144" rx="50" ry="42" fill="#c8874a"/>
+      <ellipse cx="100" cy="90" rx="40" ry="38" fill="#c8874a"/>
+      <ellipse cx="72" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <ellipse cx="128" cy="58" rx="16" ry="18" fill="#c8874a"/>
+      <ellipse cx="100" cy="96" rx="24" ry="18" fill="#e8c090"/>
+      <ellipse cx="100" cy="150" rx="32" ry="28" fill="#e8c090"/>
+      <!-- 目（輝き大） -->
+      <circle cx="87" cy="84" r="8" fill="#3a2a0a"/>
+      <circle cx="113" cy="84" r="8" fill="#3a2a0a"/>
+      <circle cx="90" cy="81" r="3" fill="#fff"/>
+      <circle cx="116" cy="81" r="3" fill="#fff"/>
+      <ellipse cx="100" cy="96" rx="6" ry="4.5" fill="#2a1a0a"/>
+      <path d="M94 102 Q100 107 106 102" stroke="#2a1a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="148" cy="148" rx="10" ry="14" fill="#c8874a" transform="rotate(30,148,148)"/>
+      <!-- 吹き出し -->
+      <rect x="114" y="46" width="56" height="28" rx="8" fill="#fff" stroke="#c8874a" stroke-width="2"/>
+      <polygon points="122,74 128,86 134,74" fill="#fff" stroke="#c8874a" stroke-width="2" stroke-linejoin="round"/>
+      <text x="142" y="65" font-size="11" fill="#2a1a0a" text-anchor="middle">わん！</text>
+    </svg>
+  </template>
+
+  <template id="pet-svg-mameshiba-away">
+    <svg class="pet-svg pet-svg--away" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="まめしば（おでかけ中）">
+      <ellipse cx="100" cy="144" rx="50" ry="42" fill="#a06030" opacity="0.4"/>
+      <ellipse cx="100" cy="90" rx="40" ry="38" fill="#a06030" opacity="0.4"/>
+      <ellipse cx="72" cy="58" rx="16" ry="18" fill="#a06030" opacity="0.4"/>
+      <ellipse cx="128" cy="58" rx="16" ry="18" fill="#a06030" opacity="0.4"/>
+      <ellipse cx="100" cy="90" rx="40" ry="38" fill="none" stroke="#c8874a" stroke-width="2" stroke-dasharray="6 4" opacity="0.6"/>
+      <text x="100" y="100" font-size="28" text-anchor="middle" opacity="0.5">🐾</text>
+      <text x="100" y="176" font-size="12" fill="#a06030" text-anchor="middle">おでかけ中…</text>
+    </svg>
+  </template>
+
+</body>
+</html>

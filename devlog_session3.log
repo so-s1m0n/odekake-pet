@@ -1,0 +1,33 @@
+ `<section id="screen-home">` — ホーム画面
+  - `#pet-room` → `#away-banner` + `#away-message`、`#pet-sprite-container`
+  - `#pet-name-display`、`#affinity-progress`（meter）、`#affinity-value`
+  - `#care-actions` → `.js-care-btn[data-action=eat/stroke/speak]` × 3
+  - `#odekake-btn`、`#album-link`
+
+**テンプレート:** 3種 × 5状態 = 15個の `<template id="pet-svg-{type}-{state}">` を定義（インラインSVGのプレースホルダーイラスト付き）
+
+**スタイルシート読み込み順:** `base.css` → `layout.css` → `components.css` → `screens/setup.css` → `screens/home.css`（未作成のものは読み込みエラーになりますが、存在する `base.css` は確実に動作します）
+Warning: Kiro CLI is running as root. Tools and commands can create root-owned files or change permissions. Restart without sudo unless elevated access is intentional.
+Hide this warning: kiro-cli settings app.warnOnElevatedPrivileges false
+
+[tool] Reading tasks.md:1, main.js:1
+[tool] status: Completed
+
+[tool] Reading router.js:1, setup.js:1, home.js:1
+[tool] status: Completed
+
+[tool] Finding styles/**/*.css in odekake-pet
+[tool] status: Completed
+
+[tool] Creating index.html
+[tool] status: Completed
+
+[tool] Editing tasks.md
+[tool] status: Completed
+
+[tool] Searching for 'T-09|screen-setup|screen-home|type="module"' in tasks.md
+[tool] status: Completed
+
+
+[measure] exit=0 elapsed=89.0s
+[measure] child max RSS: 379.2 MiB

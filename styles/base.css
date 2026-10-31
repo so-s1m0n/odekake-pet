@@ -1,0 +1,138 @@
+/*
+ * styles/base.css
+ * CSSリセット・カスタムプロパティ（変数）・基本タイポグラフィ
+ * 他のCSSファイルより先に読み込むこと
+ */
+
+/* ─────────────────────────────────────────────
+   カスタムプロパティ（デザイントークン）
+   ───────────────────────────────────────────── */
+:root {
+  /* カラーパレット */
+  --color-bg:           #faf7f2;      /* 背景（クリーム） */
+  --color-surface:      #ffffff;      /* カード・パネルの面 */
+  --color-surface-alt:  #f0ebe2;      /* 薄いアクセント面 */
+  --color-border:       #ddd4c4;      /* ボーダー */
+  --color-text:         #3d2e1e;      /* メインテキスト（濃いブラウン） */
+  --color-text-sub:     #7a6553;      /* サブテキスト */
+  --color-text-muted:   #b09880;      /* 薄いテキスト */
+  --color-primary:      #e07b54;      /* プライマリアクション（テラコッタ） */
+  --color-primary-dark: #c45e38;      /* プライマリホバー */
+  --color-accent:       #7bbfb5;      /* アクセント（ミントグリーン） */
+  --color-accent-dark:  #5ca49a;      /* アクセントホバー */
+  --color-affinity:     #f0a050;      /* なかよし度バー */
+  --color-disabled-bg:  #e8e0d5;      /* disabledボタン背景 */
+  --color-disabled-text:#b09880;      /* disabledボタンテキスト */
+  --color-danger:       #cc4444;      /* エラー・警告 */
+
+  /* フォント */
+  --font-family: 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c',
+                 'BIZ UDPGothic', 'Meiryo', sans-serif;
+  --font-size-base:    16px;
+  --font-size-sm:      13px;
+  --font-size-lg:      18px;
+  --font-size-xl:      22px;
+  --font-size-2xl:     28px;
+  --line-height-base:  1.6;
+
+  /* スペーシング */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+
+  /* 角丸 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* 影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* トランジション */
+  --transition-fast:   100ms ease;
+  --transition-normal: 200ms ease;
+}
+
+/* ─────────────────────────────────────────────
+   リセット
+   ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ─────────────────────────────────────────────
+   基本要素のリセット
+   ───────────────────────────────────────────── */
+ul, ol {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ─────────────────────────────────────────────
+   ユーティリティ
+   ───────────────────────────────────────────── */
+
+/* スクリーンリーダー専用（視覚的に非表示だが読み上げられる） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
