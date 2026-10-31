@@ -8,7 +8,10 @@
 const SCREEN_IDS = [
   'screen-setup',
   'screen-home',
-  // M3以降で追加: 'screen-odekake', 'screen-waiting', 'screen-homecoming', 'screen-album'
+  'screen-odekake',    // M3: おでかけ選択画面
+  'screen-waiting',    // M3: 不在中の待機画面
+  'screen-homecoming', // M3: 帰宅・絵日記生成画面
+  // M6以降で追加: 'screen-album'
 ];
 
 /**
@@ -43,12 +46,24 @@ export function goHome() {
 }
 
 /**
- * おでかけ選択画面へ遷移する（M3実装まではスタブ）。
+ * おでかけ選択画面（screen-odekake）を表示する。
  */
 export function goOdekake() {
-  // M3スペックで実装予定
-  console.info('[router] おでかけ画面はM3で実装予定です');
-  alert('おでかけ機能は近日公開予定です！');
+  showScreen('screen-odekake');
+}
+
+/**
+ * 不在中の待機画面（screen-waiting）を表示する。
+ */
+export function goWaiting() {
+  showScreen('screen-waiting');
+}
+
+/**
+ * 帰宅・絵日記生成画面（screen-homecoming）を表示する。
+ */
+export function goHomecoming() {
+  showScreen('screen-homecoming');
 }
 
 /**

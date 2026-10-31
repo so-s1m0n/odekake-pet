@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>おでかけペット — テストランナー</title>
+  <style>
+    body      { font-family: monospace; padding: 1rem; background: #111; color: #ccc; }
+    h1        { color: #fff; margin-bottom: 1.5rem; }
+    .suite    { margin: 1.5rem 0 0.5rem; color: #adf; font-size: 1.1rem; font-weight: bold; }
+    .pass     { color: #5f5; }
+    .fail     { color: #f55; }
+    .error    { color: #fa0; }
+    .summary  { margin-top: 2rem; font-size: 1.1rem; border-top: 1px solid #444; padding-top: 1rem; }
+    pre       { background: #222; padding: 0.5rem; border-radius: 4px; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>🧪 テストランナー</h1>
+  <div id="output"></div>
+
+  <script type="module">
+    // ─── ミニテストフレームワーク ───────────────────────────────────────────
+    const results = { pass: 0, fail: 0 };
+    const output  = document.getElementById('output');
+
+    function log(html) {
+      const p = document.createElement('p');
+      p.innerHTML = html;
+      output.appendChild(p);
+    }
+
+    window.describe = function(suiteName, fn) {
+      const h = document.createElement('p');
+      h.className = 'suite';
+      h.textContent = `▶ ${suiteName}`;
+      output.appendChild(h);
+      fn();
+    };
+
+    window.it = function(testName, fn) {
+      try {
+        fn();
+        results.pass++;
+        log(`<span class="pass">  ✓ ${testName}</span>`);
+      } catch (e) {
+        results.fail++;
+        log(`<span class="fail">  ✗ ${testName}</span>`);
+        const pre = document.createElement('pre');
+        pre.className = 'error';
+        pre.textContent = e instanceof Error ? e.message : String(e);
+        output.appendChild(pre);
+      }
+    };
+
+    window.assert = {
+      equal(actual, expected, msg) {
+        if (actual !== expected) {
+          throw new Error(
+            `${msg ?? 'assert.equal'}\n  期待値: ${JSON.stringify(expected)}\n  実際値: ${JSON.stringify(actual)}`
+          );
+        }
+      },
+      deepEqual(actual, expected, msg) {
+        const a = JSON.stringify(actual);
+        const b = JSON.stringify(expected);
+        if (a !== b) {
+          throw new Error(
+            `${msg ?? 'assert.deepEqual'}\n  期待値: ${b}\n  実際値: ${a}`
+          );
+        }
+      },
+      ok(value, msg) {
+        if (!value) {
+          throw new Error(`${msg ?? 'assert.ok'}: 値が falsy です (${JSON.stringify(value)})`);
+        }
+      },
+      notOk(value, msg) {
+        if (value) {
+          throw new Error(`${msg ?? 'assert.notOk'}: 値が truthy です (${JSON.stringify(value)})`);
+        }
+      },
+      includes(str, substr, msg) {
+        if (!String(str).includes(substr)) {
+          throw new Error(`${msg ?? 'assert.includes'}: "${substr}" が含まれていません\n  対象: "${str}"`);
+        }
+      },
+      notIncludes(str, substr, msg) {
+        if (String(str).includes(substr)) {
+          throw new Error(`${msg ?? 'assert.notIncludes'}: "${substr}" が含まれています\n  対象: "${str}"`);
+        }
+      },
+    };
+
+    // ─── テストスイートを読み込む ─────────────────────────────────────────
+    await import('./visit.test.js');
+    await import('./event-generator.test.js');
+
+    // ─── サマリ ──────────────────────────────────────────────────────────
+    const total  = results.pass + results.fail;
+    const status = results.fail === 0 ? 'pass' : 'fail';
+    const emoji  = results.fail === 0 ? '✅' : '❌';
+    const div    = document.createElement('div');
+    div.className = 'summary';
+    div.innerHTML = `<span class="${status}">${emoji} ${results.pass} / ${total} 件通過</span>`;
+    output.appendChild(div);
+  </script>
+</body>
+</html>

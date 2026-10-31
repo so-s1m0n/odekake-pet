@@ -1,0 +1,7 @@
+Warning: Kiro CLI is running as root. Tools and commands can create root-owned files or change permissions. Restart without sudo unless elevated access is intentional.
+Hide this warning: kiro-cli settings app.warnOnElevatedPrivileges false
+Error: Internal error (code -32603): Encountered an error in the response stream: The request was throttled by the service (request_id: d714af55-423f-4278-b3dc-fecb4603e484)
+
+
+[measure] exit=1 elapsed=25.6s
+[measure] child max RSS: 369.2 MiB
