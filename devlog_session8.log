@@ -1,0 +1,38 @@
+eckReturn`: 帰宅不可の場合は2秒後に自動復帰する一時メッセージを表示
+
+### TASK-10: `src/screens/homecoming.js`（246行）
+
+- `initHomecomingScreen(visit, spots)`: 完了済み Visit を受け取って画面全体を描画
+- `renderMultilineText`: イベント文の `\n` 改行を `<br>` に変換（innerHTML 不使用）
+- `renderSouvenir`: おみやげが null の場合はセクション全体を `hidden` 化
+- `onMakeCard()`: M6 実装まで alert スタブ
+- `onGoHome()`: `appendVisit` → `clearCurrentVisit` → `goHome()`
+
+**XSS対策**: 3ファイルすべてでテキスト挿入は `textContent` のみ使用、`innerHTML` 代入は一切なし。ボタンのイベント登録は `cloneNode` 差し替え方式で重複登録を防止しています。
+Warning: Kiro CLI is running as root. Tools and commands can create root-owned files or change permissions. Restart without sudo unless elevated access is intentional.
+Hide this warning: kiro-cli settings app.warnOnElevatedPrivileges false
+
+[tool] Reading tasks.md:1, visit.js:1, event-generator.js:1, store.js:1, router.js:1
+[tool] status: Completed
+
+[tool] Reading pet.js:1, design.md:1, spots.json:1
+[tool] status: Completed
+[tool] Creating task list: TASK-08〜10: おでかけ/待機/帰宅の画面モジ...
+[tool] status: Completed
+
+[tool] Creating odekake.js
+[tool] status: Completed
+[tool] Completing #1
+[tool] status: Completed
+[tool] Creating waiting.js
+[tool] status: Completed
+[tool] Completing #2
+[tool] status: Completed
+[tool] Creating homecoming.js
+[tool] status: Completed
+[tool] Completing #3
+[tool] status: Completed
+
+
+[measure] exit=0 elapsed=97.6s
+[measure] child max RSS: 329.5 MiB
