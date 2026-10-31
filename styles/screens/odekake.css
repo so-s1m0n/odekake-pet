@@ -1,0 +1,124 @@
+/*
+ * styles/screens/odekake.css
+ * おでかけ選択画面（screen-odekake）固有のスタイル
+ */
+
+/* ─────────────────────────────────────────────
+   戻るボタン
+   ───────────────────────────────────────────── */
+
+/* ヘッダー内の戻るボタン */
+.screen__back-btn {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.screen__back-btn:hover,
+.screen__back-btn:focus-visible {
+  color: var(--color-primary);
+  background-color: var(--color-surface-alt);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   リード文
+   ───────────────────────────────────────────── */
+
+/* 「どこにいく？」リード文 */
+.odekake__lead {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+/* ─────────────────────────────────────────────
+   スポット一覧
+   ───────────────────────────────────────────── */
+
+/* スポットカードのコンテナ */
+.spot-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+/* ─────────────────────────────────────────────
+   スポットカード
+   ───────────────────────────────────────────── */
+
+/* カード本体 */
+.spot-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-normal),
+    background-color var(--transition-normal),
+    box-shadow var(--transition-normal);
+  text-align: left;
+  /* フォーカス時のアウトラインはデフォルトを活かす */
+}
+
+.spot-card:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-sm);
+}
+
+.spot-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 選択済み状態 */
+.spot-card.is-selected {
+  border-color: var(--color-primary);
+  background-color: #fff5f0; /* テラコッタの淡い背景 */
+  box-shadow: var(--shadow-md);
+}
+
+/* ─────────────────────────────────────────────
+   スポットカード内要素
+   ───────────────────────────────────────────── */
+
+/* スポットのアイコン（絵文字） */
+.spot-card__icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 2.5rem;
+  text-align: center;
+}
+
+/* テキスト部分のラッパー */
+.spot-card__text {
+  flex: 1;
+  min-width: 0; /* テキストが溢れないようにするための最小幅 */
+}
+
+/* スポット名 */
+.spot-card__name {
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+/* スポット説明文 */
+.spot-card__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  line-height: 1.4;
+}

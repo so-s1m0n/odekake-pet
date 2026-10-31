@@ -1,0 +1,120 @@
+/*
+ * styles/screens/homecoming.css
+ * 帰宅画面（screen-homecoming）固有のスタイル
+ * ペットの帰還を祝い、イベント文とおみやげを表示するための装飾スタイル
+ */
+
+/* ─────────────────────────────────────────────
+   ペットのスプライト表示エリア
+   ───────────────────────────────────────────── */
+
+/* スプライト画像のコンテナ */
+.homecoming-sprite {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto var(--space-4);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+/* ペット画像 */
+.homecoming-sprite__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 画像が読み込めなかった場合の絵文字フォールバック */
+.homecoming-sprite__fallback {
+  font-size: 3.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─────────────────────────────────────────────
+   ペット名
+   ───────────────────────────────────────────── */
+
+/* 「○○ちゃんが帰ってきたよ」テキスト */
+.homecoming__pet-name {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+/* ─────────────────────────────────────────────
+   今日の出来事セクション
+   ───────────────────────────────────────────── */
+
+/* 出来事ブロック全体 */
+.homecoming-event {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 「今日の出来事」見出し */
+.homecoming-event__title {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  /* セクション見出しなので装飾は控えめに */
+}
+
+/* スポット名（例: ★ 星屑工房） */
+.homecoming-event__spot {
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-3);
+}
+
+/* イベント文本文 */
+.homecoming-event__text {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  line-height: 1.8;
+}
+
+/* ─────────────────────────────────────────────
+   おみやげセクション
+   ───────────────────────────────────────────── */
+
+/* おみやげブロック（おみやげがある場合のみ表示） */
+.homecoming-souvenir {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: #fffbf0; /* 暖かいクリーム色 */
+  border: 1px solid var(--color-affinity);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+/* 「おみやげ」ラベル */
+.homecoming-souvenir__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* おみやげ名（例: ⭐ 星のかけら） */
+.homecoming-souvenir__name {
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  color: var(--color-text);
+}

@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="styles/components.css">
   <link rel="stylesheet" href="styles/screens/setup.css">
   <link rel="stylesheet" href="styles/screens/home.css">
+  <link rel="stylesheet" href="styles/screens/odekake.css">
+  <link rel="stylesheet" href="styles/screens/waiting.css">
+  <link rel="stylesheet" href="styles/screens/homecoming.css">
 
   <!-- アプリのエントリポイント（ES Modules） -->
   <script type="module" src="src/main.js"></script>
@@ -252,6 +255,138 @@
 
     </main>
   </section><!-- /#screen-home -->
+
+
+  <!-- ════════════════════════════════════════════
+       おでかけ選択画面 — screen-odekake
+  ════════════════════════════════════════════ -->
+  <section id="screen-odekake" class="screen" hidden>
+    <header class="screen__header">
+      <button id="odekake-back-btn" class="screen__back-btn" aria-label="ホームへ戻る">
+        ← ホームへ
+      </button>
+      <h1 class="screen__title">おでかけ</h1>
+    </header>
+
+    <main class="screen__body">
+
+      <!-- リード文 -->
+      <p class="odekake__lead">どこにいく？</p>
+
+      <!-- スポット一覧（spots.json をもとに JS で生成する） -->
+      <div
+        id="spot-list"
+        class="spot-list"
+        role="radiogroup"
+        aria-label="おでかけ先の選択"
+      ></div>
+
+      <!-- 出発ボタン（スポット未選択時は disabled） -->
+      <button
+        id="depart-btn"
+        class="btn btn--primary"
+        disabled
+        aria-disabled="true"
+      >
+        おでかけ！ ✈
+      </button>
+
+    </main>
+  </section><!-- /#screen-odekake -->
+
+
+  <!-- ════════════════════════════════════════════
+       待機画面（旅の途中メモ） — screen-waiting
+  ════════════════════════════════════════════ -->
+  <section id="screen-waiting" class="screen" hidden>
+    <header class="screen__header">
+      <h1 class="screen__title">旅の途中</h1>
+    </header>
+
+    <main class="screen__body">
+
+      <!-- 途中メモ（ランダムメッセージ。JS が挿入する） -->
+      <div class="waiting-memo">
+        <p id="waiting-memo-text" class="waiting-memo__text"></p>
+      </div>
+
+      <!-- 訪問先の情報（JS が挿入する） -->
+      <p id="waiting-spot-name" class="waiting__spot-name"></p>
+
+      <!-- タイマー表示 -->
+      <div class="waiting-timer">
+        <p class="waiting-timer__row">
+          出発から:
+          <span id="elapsed-time" class="waiting-timer__value">00:00</span>
+        </p>
+        <p id="remaining-time-label" class="waiting-timer__row">
+          帰宅予定: あと
+          <span id="remaining-time" class="waiting-timer__value">--:--</span>
+        </p>
+      </div>
+
+      <!-- 帰宅可能になったとき表示する案内メッセージ（初期は hidden） -->
+      <p id="return-ready-msg" class="return-ready-msg" hidden>
+        🎉 おかえり！帰宅チェックを押してね
+      </p>
+
+      <!-- 帰宅チェックボタン -->
+      <button id="check-return-btn" class="btn btn--secondary">
+        帰宅チェック 🔔
+      </button>
+
+    </main>
+  </section><!-- /#screen-waiting -->
+
+
+  <!-- ════════════════════════════════════════════
+       帰宅画面 — screen-homecoming
+  ════════════════════════════════════════════ -->
+  <section id="screen-homecoming" class="screen" hidden>
+    <header class="screen__header">
+      <h1 class="screen__title">おかえり！</h1>
+    </header>
+
+    <main class="screen__body">
+
+      <!-- ペットのイラスト（JS が assets/pets/{type}/idle.png を挿入する） -->
+      <div
+        id="homecoming-sprite"
+        class="homecoming-sprite"
+        aria-live="polite"
+        aria-label="帰ってきたペット"
+      ></div>
+
+      <!-- 「○○ちゃんが帰ってきたよ」（JS が挿入する） -->
+      <p id="homecoming-pet-name" class="homecoming__pet-name"></p>
+
+      <!-- 今日の出来事 -->
+      <section class="homecoming-event">
+        <h2 class="homecoming-event__title">今日の出来事</h2>
+        <!-- スポット名（JS が挿入する） -->
+        <p id="homecoming-spot-name" class="homecoming-event__spot"></p>
+        <!-- イベント文（JS が挿入する） -->
+        <p id="homecoming-event-text" class="homecoming-event__text"></p>
+      </section>
+
+      <!-- おみやげ（おみやげがある場合のみ表示する。初期は hidden） -->
+      <div id="homecoming-souvenir" class="homecoming-souvenir" hidden>
+        <p class="homecoming-souvenir__label">おみやげ</p>
+        <p id="homecoming-souvenir-name" class="homecoming-souvenir__name"></p>
+      </div>
+
+      <!-- 絵日記をつくるボタン（M6実装まではスタブ） -->
+      <button id="make-card-btn" class="btn btn--secondary">
+        絵日記をつくる 📖
+      </button>
+
+      <!-- おうちへボタン（Visit を履歴に保存してホーム画面へ） -->
+      <button id="go-home-btn" class="btn btn--primary">
+        おうちへ 🏠
+      </button>
+
+    </main>
+  </section><!-- /#screen-homecoming -->
 
 
   <!-- ════════════════════════════════════════════

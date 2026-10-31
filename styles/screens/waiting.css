@@ -1,0 +1,98 @@
+/*
+ * styles/screens/waiting.css
+ * 待機画面（screen-waiting）固有のスタイル
+ * ペットが不在中であることを表現し、タイマーを目立たせる
+ */
+
+/* ─────────────────────────────────────────────
+   途中メモブロック
+   ───────────────────────────────────────────── */
+
+/* 「いまごろ何してるかな……」ランダムメッセージのラッパー */
+.waiting-memo {
+  background-color: var(--color-surface-alt);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+/* メモ本文 */
+.waiting-memo__text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-sub);
+  font-style: italic;
+  line-height: var(--line-height-base);
+}
+
+/* ─────────────────────────────────────────────
+   訪問中スポット名
+   ───────────────────────────────────────────── */
+
+/* 「○○ちゃんは ★星屑工房 を訪問中...」のテキスト */
+.waiting__spot-name {
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  text-align: center;
+  margin-bottom: var(--space-6);
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────────
+   タイマー
+   ───────────────────────────────────────────── */
+
+/* 経過時間・残り時間を並べるコンテナ */
+.waiting-timer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 各タイマー行 */
+.waiting-timer__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-base);
+  color: var(--color-text-sub);
+}
+
+/* タイマーの数値部分（MM:SS） */
+.waiting-timer__value {
+  font-size: var(--font-size-xl);
+  font-weight: bold;
+  font-variant-numeric: tabular-nums; /* 桁が変わっても幅が変わらないようにする */
+  color: var(--color-text);
+  letter-spacing: 0.05em;
+}
+
+/* ─────────────────────────────────────────────
+   帰宅可能メッセージ
+   ───────────────────────────────────────────── */
+
+/* 「🎉 おかえり！帰宅チェックを押してね」 */
+.return-ready-msg {
+  font-size: var(--font-size-base);
+  color: var(--color-primary-dark);
+  text-align: center;
+  background-color: #fff5f0; /* テラコッタの淡い背景 */
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-weight: bold;
+  animation: return-ready-pulse 1.5s ease-in-out infinite;
+}
+
+/* 帰宅可能メッセージのパルスアニメーション */
+@keyframes return-ready-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
