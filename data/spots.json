@@ -1,0 +1,233 @@
+{
+  "spots": [
+    {
+      "id": "hoshikuzu-kobo",
+      "displayName": "星屑工房",
+      "description": "星のかけらが集まる不思議な工房。天井には無数の光が漂っている。",
+      "themeColor": "#6a3fa0",
+      "icon": "✦",
+      "souvenirs": [
+        {
+          "id": "kobo-hoshi-kakera",
+          "displayName": "星のかけら",
+          "icon": "⭐",
+          "spotId": "hoshikuzu-kobo"
+        }
+      ],
+      "events": [
+        {
+          "id": "kobo-001",
+          "text": "{petName}は工房の棚の隙間に、ちいさな星のかけらをみつけた。\nきらきらと光るそれを、そっと手に取るとあたたかかった。\nルミが「それはきみにあげる」とにっこりした。",
+          "souvenirId": "kobo-hoshi-kakera",
+          "conditions": null
+        },
+        {
+          "id": "kobo-002",
+          "text": "{petName}が工房をのぞくと、ルミが星屑のランプを作っていた。\nしばらく見ていたら「手伝ってくれる？」と声をかけられた。\nふたりで完成させたランプは、夜空みたいな色だった。",
+          "souvenirId": null,
+          "conditions": {
+            "sociability": [1, 2],
+            "curiosity": null,
+            "timeOfDay": null
+          }
+        },
+        {
+          "id": "kobo-003",
+          "text": "{petName}は工房の奥の扉のむこうに、でっかい望遠鏡をみつけた。\nのぞいてみると、遠い星がものすごく近くに見えた。\n「流れ星の正体はね」とルミがそっと教えてくれた。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": [2],
+            "sociability": null,
+            "timeOfDay": ["night", "evening"]
+          }
+        },
+        {
+          "id": "kobo-004",
+          "text": "{petName}は工房の入口でルミにばったり会った。\nふたりで近くの丘まで歩いて、昼寝のような時間を過ごした。\n空はとても青くて、星のことを考えながらうとうとした。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": null,
+            "sociability": null,
+            "timeOfDay": ["afternoon"]
+          }
+        },
+        {
+          "id": "kobo-005",
+          "text": "{petName}が工房のドアをノックしたが、誰もいなかった。\nかわりに戸口に「すぐもどります ✦」とメモがあった。\nどこかから星のにおいがして、ちょっとだけ待ってみた。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": [0, 1],
+            "sociability": [0],
+            "timeOfDay": null
+          }
+        },
+        {
+          "id": "kobo-006",
+          "text": "{petName}は朝の工房で、ルミが星屑を瓶につめているところを見た。\nひとつの瓶を見せてもらうと、中でちいさな光が踊っていた。\n「これ、きみの分」と言って、ひとつ手渡してくれた。",
+          "souvenirId": "kobo-hoshi-kakera",
+          "conditions": {
+            "curiosity": null,
+            "sociability": null,
+            "timeOfDay": ["morning"]
+          }
+        },
+        {
+          "id": "kobo-007",
+          "text": "{petName}は工房の外で、かけらが地面に落ちているのをみつけた。\nひろおうとしたら、かけらがふわっと浮いて窓の中へ消えた。\nルミが窓から顔を出して「おかえしするね」と笑った。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": [1, 2],
+            "sociability": null,
+            "timeOfDay": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "mori-hyohonshitsu",
+      "displayName": "森の標本室",
+      "description": "静かな森の奥にある、不思議なものが集まった記録の部屋。",
+      "themeColor": "#2e6b3e",
+      "icon": "🌿",
+      "souvenirs": [
+        {
+          "id": "mori-ki-no-mi",
+          "displayName": "木の実のかご",
+          "icon": "🌰",
+          "spotId": "mori-hyohonshitsu"
+        }
+      ],
+      "events": [
+        {
+          "id": "mori-001",
+          "text": "{petName}は標本室の棚にならんだ小さな箱を一つずつ見ていった。\nどれも森の欠片——葉、種、石、羽——がそっとしまわれていた。\nテオが「これが今日の新入りだよ」と木の実を見せてくれた。",
+          "souvenirId": "mori-ki-no-mi",
+          "conditions": null
+        },
+        {
+          "id": "mori-002",
+          "text": "{petName}は森の小道でテオと出会った。\nふたりでしばらく歩きながら、どんぐりをひろった。\n「記録しておくね」とテオが手帳に描いていた。",
+          "souvenirId": null,
+          "conditions": {
+            "sociability": [1, 2],
+            "curiosity": null,
+            "timeOfDay": ["morning", "afternoon"]
+          }
+        },
+        {
+          "id": "mori-003",
+          "text": "{petName}は標本室のいちばん奥の棚に、名前のない標本をみつけた。\nテオに聞いたら「それはまだ分からないもの」と言った。\n分からないものを大事にとっておくのが、ここのやりかただった。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": [2],
+            "sociability": null,
+            "timeOfDay": null
+          }
+        },
+        {
+          "id": "mori-004",
+          "text": "{petName}が標本室に着いたとき、中は静かで誰もいなかった。\n窓から光がさしこんで、埃がゆっくり舞っていた。\nしばらくそこにいたら、なんだか落ち着いてきた。",
+          "souvenirId": null,
+          "conditions": {
+            "sociability": [0],
+            "curiosity": null,
+            "timeOfDay": null
+          }
+        },
+        {
+          "id": "mori-005",
+          "text": "{petName}は夕方の森で、テオが何かをじっと見ているのに出会った。\n「虫の声を記録してるんだ」とテオが耳を澄ませた。\nしばらく一緒に聴いていたら、ずいぶん種類があるとわかった。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": [1, 2],
+            "sociability": null,
+            "timeOfDay": ["evening"]
+          }
+        },
+        {
+          "id": "mori-006",
+          "text": "{petName}は標本室で、テオが木の実のかごを編んでいるところを見た。\n「余ったのあげる」と言って、小さなかごをくれた。\n森のにおいがする、丸くて軽いかごだった。",
+          "souvenirId": "mori-ki-no-mi",
+          "conditions": {
+            "sociability": [1, 2],
+            "curiosity": null,
+            "timeOfDay": ["afternoon", "evening"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tokeidai-kitchen",
+      "displayName": "時計塔キッチン",
+      "description": "時計塔の最上階にある、いつも何かのにおいがする小さな食堂。",
+      "themeColor": "#8b5e0a",
+      "icon": "🕰",
+      "souvenirs": [
+        {
+          "id": "kitchen-ko-gashi",
+          "displayName": "小さなお菓子",
+          "icon": "🍪",
+          "spotId": "tokeidai-kitchen"
+        }
+      ],
+      "events": [
+        {
+          "id": "kitchen-001",
+          "text": "{petName}が時計塔の階段をのぼると、焼き菓子のにおいがした。\nノアが「ちょうどよかった、味見してくれる？」と言った。\nさくさくして、ほんのりあまくて、とてもおいしかった。",
+          "souvenirId": "kitchen-ko-gashi",
+          "conditions": null
+        },
+        {
+          "id": "kitchen-002",
+          "text": "{petName}はキッチンの丸窓から町を見下ろした。\n時計塔の針がすぐ近くに見えて、大きさにびっくりした。\nノアが「毎日見てるけどやっぱりでかいよね」と笑った。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": [1, 2],
+            "sociability": null,
+            "timeOfDay": null
+          }
+        },
+        {
+          "id": "kitchen-003",
+          "text": "{petName}はノアが鍋をかき混ぜているところをながめた。\n「今日のスープはね、夜の味がするんだ」とノアが言った。\nどんな味かわからないまま、いいにおいだけをもらって帰った。",
+          "souvenirId": null,
+          "conditions": {
+            "curiosity": null,
+            "sociability": null,
+            "timeOfDay": ["night", "evening"]
+          }
+        },
+        {
+          "id": "kitchen-004",
+          "text": "{petName}がキッチンについたとき、ノアはお昼寝中だった。\nテーブルに「お茶は自分でどうぞ」とメモがあった。\nのんびりお茶を飲んでいたら、ノアがむくっと起きてきた。",
+          "souvenirId": null,
+          "conditions": {
+            "sociability": null,
+            "curiosity": [0, 1],
+            "timeOfDay": ["afternoon"]
+          }
+        },
+        {
+          "id": "kitchen-005",
+          "text": "{petName}は朝のキッチンでノアとパンを焼いた。\nこねるのを少し手伝ったら、焼き上がりを半分もらえた。\n外はかりっと、中はふわふわの、朝にぴったりのパンだった。",
+          "souvenirId": "kitchen-ko-gashi",
+          "conditions": {
+            "sociability": [1, 2],
+            "curiosity": null,
+            "timeOfDay": ["morning"]
+          }
+        },
+        {
+          "id": "kitchen-006",
+          "text": "{petName}はキッチンで、ノアが何かを考え込んでいるのを見た。\n「新しいレシピを試してるんだけど、名前が決まらなくて」とノアが言った。\n{petName}が思いついた名前を言ったら、ノアはすごく喜んでくれた。",
+          "souvenirId": null,
+          "conditions": {
+            "sociability": [2],
+            "curiosity": [1, 2],
+            "timeOfDay": null
+          }
+        }
+      ]
+    }
+  ]
+}
