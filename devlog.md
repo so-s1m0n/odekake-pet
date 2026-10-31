@@ -3,3 +3,4 @@
 - 2026-10-31 22:05-22:14 JST | Kiroセッション2: tasks.md（T-01〜T-10）作成＋M1/M2実装ファイル生成（src/一式、styles/base.css、data/pets.json）。終了直前にサービス側スロットリングで exit=1、最終報告とT-09（index.html）が未完。最大RSS 362.5MiB。
 - 2026-10-31 22:20 JST | Kiroセッション3: index.html作成、T-09完了。89.0秒、最大RSS 379.2MiB（セッションごとに微増、要監視）。
 - 2026-10-31 22:21 JST | 検証（T-10相当を太郎側で実施）: node --check 全JSファイルOK、pets.json パースOK、localhost配信で /・main.js・base.css・pets.json すべて200。gitコミット d5aa797。M1/M2（ペット登録・ホーム画面）動作可能状態。
+- 2026-10-31 22:24 JST | Kiroセッション4: odekake-and-eventスペック一式（requirements 160行/design 527行/tasks 182行）＋data/spots.json生成後にスロットリングで終了（exit=1、193.4秒、最大RSS 368.9MiB）。実装は未着手。スロットリングはセッション2に続いて2回目。対策として実装を短いセッションに分割する。
