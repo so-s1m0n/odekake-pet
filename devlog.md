@@ -8,3 +8,4 @@
 - 2026-11-01 01:34 JST | Kiroセッション7: テストファイルのawait構文エラーを修正（19.5秒、exit=0）。モジュール構文チェックで修正を確認。約3時間の間隔でレート制限は冷却していた。
 - 2026-11-01 07:46 JST | Kiroセッション8: おでかけ画面3ファイル（odekake/waiting/homecoming）作成、97.6秒で正常終了。全て構文OK、コミット済み。
 - 2026-11-01 07:48 JST | Kiroセッション9: 配線作業の途中（index.htmlへの画面追加と画面別CSS 3ファイル）まで完了した時点でスロットリング（88.6秒）。未完: TASK-11（home.js更新）、TASK-12（main.js初期化）、styles/screens/setup.css と home.css（index.htmlから参照されているが未作成）。次セッションで補完する。
+- 2026-11-01 07:53 JST | Kiroセッション10: 配線の残作業が完了（setup.css/home.css作成、main.jsで新画面3つの初期化、home.js更新）。検証: 全JS構文OK、localhost配信で全アセット200。odekake-and-eventスペック（M3〜M5: おでかけ選択→不在→帰宅）が通しで動作する状態になった。次はM6（絵日記カード＋アルバム）のスペック作成へ。
