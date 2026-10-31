@@ -317,17 +317,16 @@ describe('generateEvent — おみやげ付与', () => {
   });
 });
 
-describe('generateEvent — 実データ（spots.jsonから）', () => {
-  // spots.json からフィクスチャを読み込んで検証する
-  let spotsData;
+// spots.json をトップレベル await で読み込む（ES Modules のトップレベル await を利用）
+let spotsData;
+try {
+  spotsData = await fetch('../data/spots.json').then(r => r.json());
+} catch {
+  spotsData = null;
+}
 
-  try {
-    // test-runner.html 経由（fetch で取得済みのデータを使う想定）
-    // テスト内でも fetch を使えるが、シンプルに動的インポートで取得する
-    spotsData = await fetch('../data/spots.json').then(r => r.json());
-  } catch {
-    spotsData = null;
-  }
+describe('generateEvent — 実データ（spots.jsonから）', () => {
+  // spots.json からフィクスチャを読み込んで検証する（トップレベルで取得済み）
 
   if (!spotsData) {
     it('（スキップ: spots.json を取得できませんでした）', () => {});

@@ -1,0 +1,21 @@
+問題箇所を確認しました。`describe` のコールバック（同期関数）内で `await fetch(...)` が使われています。これをモジュールのトップレベル `await` に移動します。変更を確認します。修正完了です。変更内容:
+
+- `let spotsData` と `await fetch(...)` のブロックを `describe` の外、モジュールのトップレベルに移動
+- `describe` コールバック内では、トップレベルで取得済みの `spotsData` 変数を参照するだけにした
+- テストケースの内容・検証項目は一切変更なし
+
+ES Modules は `<script type="module">` として読み込まれるためトップレベル `await` が使用でき、構文エラーは解消されます。
+Warning: Kiro CLI is running as root. Tools and commands can create root-owned files or change permissions. Restart without sudo unless elevated access is intentional.
+Hide this warning: kiro-cli settings app.warnOnElevatedPrivileges false
+[tool] Reading event-generator.test.js:1
+[tool] status: Completed
+
+[tool] Editing event-generator.test.js
+[tool] status: Completed
+
+[tool] Searching for 'spotsData|await fetch' in event-generator.test.js
+[tool] status: Completed
+
+
+[measure] exit=0 elapsed=19.5s
+[measure] child max RSS: 328.7 MiB
