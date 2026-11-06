@@ -118,3 +118,137 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
 
   return currentY;
 }
+
+// ─────────────────────────────────────────────
+// 内部ヘルパー関数（TASK-16 追加分）
+// ─────────────────────────────────────────────
+
+/**
+ * 画像 URL を読み込み ImageBitmap を返す。
+ * fetch または createImageBitmap が失敗した場合は null を返す（例外を投げない）。
+ *
+ * @param {string} url - 読み込む画像の URL
+ * @returns {Promise<ImageBitmap|null>}
+ */
+async function loadImage(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await createImageBitmap(blob);
+  } catch {
+    // ネットワークエラー・デコードエラーいずれも null で返す
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// 公開 API（TASK-16 追加分）
+// ─────────────────────────────────────────────
+
+/**
+ * 絵日記カードを Canvas に描画する。
+ * 背景画像の読み込みを含むため非同期。
+ *
+ * 描画順:
+ *  1. Canvas をクリア
+ *  2. 背景画像（失敗時はテーマカラーで塗りつぶし）
+ *  3. 下部半透明オーバーレイ
+ *  4. テキスト（ペット名・出来事・日付）
+ *  5. ロゴ（失敗時はスキップ）
+ *
+ * @param {import('./card-generator.js').CardData} cardData - 描画するカードのデータ
+ * @param {HTMLCanvasElement} canvas - 描画対象の Canvas 要素
+ * @param {{ themeColor: string }} spot - テーマカラー取得用のスポット定義
+ * @returns {Promise<void>}
+ */
+export async function generateCard(cardData, canvas, spot) {
+  const ctx = canvas.getContext('2d');
+
+  // 1. Canvas をクリア
+  ctx.clearRect(0, 0, CARD_LAYOUT.WIDTH, CARD_LAYOUT.HEIGHT);
+
+  // 2. 背景画像
+  const bgImage = await loadImage('assets/spots/' + cardData.spotId + '/bg.png');
+  if (bgImage !== null) {
+    // 読み込み成功: 全面に描画
+    ctx.drawImage(bgImage, 0, 0, CARD_LAYOUT.WIDTH, CARD_LAYOUT.HEIGHT);
+  } else {
+    // 読み込み失敗: スポットのテーマカラーで塗りつぶす
+    ctx.fillStyle = spot.themeColor;
+    ctx.fillRect(0, 0, CARD_LAYOUT.WIDTH, CARD_LAYOUT.HEIGHT);
+  }
+
+  // 3. 下部半透明オーバーレイ
+  ctx.fillStyle = CARD_LAYOUT.OVERLAY_COLOR;
+  ctx.fillRect(
+    0,
+    CARD_LAYOUT.OVERLAY_Y,
+    CARD_LAYOUT.WIDTH,
+    CARD_LAYOUT.OVERLAY_HEIGHT,
+  );
+
+  // 4. テキストを白色で描画
+  ctx.fillStyle = '#FFFFFF';
+
+  // 4a. ペット名（中央揃え）
+  ctx.font = CARD_LAYOUT.PET_NAME_SIZE + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(cardData.petName, CARD_LAYOUT.PET_NAME_X, CARD_LAYOUT.PET_NAME_Y);
+
+  // 4b. 出来事テキスト（折り返し描画）
+  ctx.font = CARD_LAYOUT.EVENT_TEXT_SIZE + 'px sans-serif';
+  ctx.textAlign = 'left';
+  drawWrappedText(
+    ctx,
+    truncateText(cardData.eventText),
+    CARD_LAYOUT.EVENT_TEXT_X,
+    CARD_LAYOUT.EVENT_TEXT_Y,
+    CARD_LAYOUT.EVENT_MAX_WIDTH,
+    CARD_LAYOUT.EVENT_LINE_H,
+  );
+
+  // 4c. 日付（中央揃え）
+  ctx.font = CARD_LAYOUT.DATE_SIZE + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(
+    formatDateJa(cardData.returnedAt),
+    CARD_LAYOUT.DATE_X,
+    CARD_LAYOUT.DATE_Y,
+  );
+
+  // 5. ロゴ（右下。読み込み失敗時はスキップ）
+  const logo = await loadImage('assets/ui/logo.svg');
+  if (logo !== null) {
+    ctx.drawImage(logo, CARD_LAYOUT.LOGO_X, CARD_LAYOUT.LOGO_Y, CARD_LAYOUT.LOGO_W, CARD_LAYOUT.LOGO_H);
+  }
+}
+
+/**
+ * Canvas の内容を PNG ファイルとして端末に保存させる。
+ * ファイル名は 'odekake-YYYYMMDD.png' 形式（例: odekake-20261102.png）。
+ *
+ * @param {HTMLCanvasElement} canvas     - 保存する Canvas 要素
+ * @param {string}            returnedAt - 帰宅日時（ISO 8601）。ファイル名の日付部分に使う
+ */
+export function downloadCardAsPng(canvas, returnedAt) {
+  canvas.toBlob((blob) => {
+    // Blob が生成できなかった場合は何もしない
+    if (blob === null) return;
+
+    // ファイル名用の日付文字列（YYYYMMDD）を生成する
+    // ISO 8601 の先頭10文字（YYYY-MM-DD）からハイフンを除去する
+    const datePart = returnedAt.slice(0, 10).replace(/-/g, '');
+    const filename = 'odekake-' + datePart + '.png';
+
+    // <a download> を使って保存を促す
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+
+    // Object URL を解放してメモリリークを防ぐ
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
