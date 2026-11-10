@@ -118,3 +118,27 @@
   font-weight: bold;
   color: var(--color-text);
 }
+
+/* ─────────────────────────────────────────────
+   絵日記カードのプレビュー（TASK-18）
+   ───────────────────────────────────────────── */
+
+/* プレビュー領域。1080×1920 の canvas を画面幅に収める */
+.card-preview-area {
+  max-width: 360px;
+  width: 100%;
+  margin: 0 auto var(--space-5);
+}
+
+/* hidden 属性つきのときは非表示にする */
+.card-preview-area[hidden] {
+  display: none;
+}
+
+/* プレビュー canvas（縦長カードを幅に合わせて縮小表示） */
+.card-preview-area__canvas {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}

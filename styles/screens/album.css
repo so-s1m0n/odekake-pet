@@ -1,0 +1,216 @@
+/*
+ * styles/screens/album.css
+ * おもいでアルバム画面（screen-album）固有のスタイル
+ * TASK-18（diary-and-album スペック 5節）: base.css / layout.css /
+ * components.css を前提とし、重複する定義は置かない
+ */
+
+/* ─────────────────────────────────────────────
+   おみやげ棚
+   ───────────────────────────────────────────── */
+
+/* おみやげ棚ブロック全体 */
+.souvenir-shelf {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 「おみやげ棚」見出し */
+.souvenir-shelf__title {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* おみやげカードを並べるコンテナ（スポット別グループを縦に積む） */
+.souvenir-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* スポットごとのグループ */
+.souvenir-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* スポット名（グループ見出し。TASK-20 の実装で使う想定） */
+.souvenir-group__title {
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+  color: var(--color-text-sub);
+}
+
+/* おみやげ1件分のカード（グループ内は横並び・折り返し） */
+.souvenir-group .souvenir-list {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.souvenir-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 120px;
+  background-color: #fffbf0; /* 暖かいクリーム色（homecoming のおみやげ表示と統一） */
+  border: 1px solid var(--color-affinity);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* おみやげ名（例: ⭐ 星のかけら） */
+.souvenir-card__name {
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+/* おみやげのスポット名 */
+.souvenir-card__spot {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+}
+
+/* おみやげがまだないときの空状態 */
+.souvenir-shelf__empty {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+/* ─────────────────────────────────────────────
+   旅のきろく
+   ───────────────────────────────────────────── */
+
+/* 旅のきろくブロック全体 */
+.visit-log {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 「旅のきろく」見出し */
+.visit-log__title {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 件数（例: （3件）） */
+.visit-log__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+}
+
+/* 訪問カードを縦に並べるコンテナ */
+.visit-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* 訪問1件分のカード */
+.visit-card {
+  background-color: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+/* 日付とスポット名の行 */
+.visit-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+}
+
+/* 帰宅日付 */
+.visit-card__date {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* スポット名 */
+.visit-card__spot {
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  color: var(--color-primary-dark);
+}
+
+/* 出来事テキストの冒頭 */
+.visit-card__text {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  line-height: 1.8;
+  margin-bottom: var(--space-2);
+}
+
+/* おみやげの行（ある場合のみ） */
+.visit-card__souvenir {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  margin-bottom: var(--space-2);
+}
+
+/* 「もう一度見る」ボタンの配置 */
+.visit-card__action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 訪問履歴がまだないときの空状態 */
+.visit-list__empty {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+
+/* ─────────────────────────────────────────────
+   カード再表示エリア（オーバーレイ表示）
+   ───────────────────────────────────────────── */
+
+/* 「もう一度見る」で表示するプレビュー領域 */
+.album-card-preview {
+  max-width: 360px;
+  width: 100%;
+  margin: 0 auto var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-md);
+}
+
+/* hidden 属性つきのときは flex を打ち消して非表示にする */
+.album-card-preview[hidden] {
+  display: none;
+}
+
+/* 再表示する絵日記カード（1080×1920 を画面幅に縮小） */
+.album-card-preview__canvas {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
