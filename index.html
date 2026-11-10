@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="styles/screens/odekake.css">
   <link rel="stylesheet" href="styles/screens/waiting.css">
   <link rel="stylesheet" href="styles/screens/homecoming.css">
+  <link rel="stylesheet" href="styles/screens/album.css">
 
   <!-- アプリのエントリポイント（ES Modules） -->
   <script type="module" src="src/main.js"></script>
@@ -380,6 +381,16 @@
         絵日記をつくる 📖
       </button>
 
+      <!-- 絵日記カードのプレビュー（生成後に表示。TASK-17） -->
+      <div id="card-preview-area" class="card-preview-area" hidden>
+        <canvas id="diary-card-canvas" class="card-preview-area__canvas"
+                width="1080" height="1920"
+                aria-label="絵日記カードのプレビュー"></canvas>
+      </div>
+      <button id="save-card-btn" class="btn btn--secondary" disabled aria-disabled="true">
+        絵日記を保存 ⬇
+      </button>
+
       <!-- おうちへボタン（Visit を履歴に保存してホーム画面へ） -->
       <button id="go-home-btn" class="btn btn--primary">
         おうちへ 🏠
@@ -387,6 +398,49 @@
 
     </main>
   </section><!-- /#screen-homecoming -->
+
+
+  <!-- ════════════════════════════════════════════
+       おもいでアルバム画面 — screen-album（TASK-17）
+  ════════════════════════════════════════════ -->
+  <section id="screen-album" class="screen" hidden>
+    <header class="screen__header">
+      <button id="album-back-btn" class="screen__back-btn">← ホームへ</button>
+      <h1 class="screen__title">おもいでアルバム</h1>
+    </header>
+    <main class="screen__body">
+
+      <!-- おみやげ棚 -->
+      <section class="souvenir-shelf" aria-label="おみやげ棚">
+        <h2 class="souvenir-shelf__title">おみやげ棚</h2>
+        <div id="souvenir-list" class="souvenir-list">
+          <!-- JS で生成。おみやげなし時は空メッセージ -->
+        </div>
+      </section>
+
+      <!-- 旅のきろく -->
+      <section class="visit-log" aria-label="旅のきろく">
+        <h2 class="visit-log__title">旅のきろく
+          <span id="visit-count" class="visit-log__count"></span>
+        </h2>
+        <div id="visit-list" class="visit-list">
+          <!-- JS で生成。空時はメッセージ＋ホーム誘導ボタン -->
+        </div>
+      </section>
+
+      <!-- カード再表示エリア（クリック時にトグル表示） -->
+      <div id="album-card-preview" class="album-card-preview" hidden>
+        <canvas id="album-diary-canvas" class="album-card-preview__canvas"
+                width="1080" height="1920"
+                aria-label="過去の絵日記カードのプレビュー"></canvas>
+        <button id="album-save-card-btn" class="btn btn--secondary">
+          絵日記を保存 ⬇
+        </button>
+        <button id="album-close-card-btn" class="btn btn--ghost">閉じる</button>
+      </div>
+
+    </main>
+  </section><!-- /#screen-album -->
 
 
   <!-- ════════════════════════════════════════════
