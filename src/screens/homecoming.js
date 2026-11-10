@@ -5,7 +5,8 @@
  * 責務:
  *  - 帰宅した Visit のイベント文・おみやげ情報を画面に表示する
  *  - ペットのスプライト画像を表示する（帰宅状態）
- *  - 「絵日記をつくる」ボタン: M6実装まではスタブ
+ *  - 「絵日記をつくる」ボタン: generateCard で絵日記カードを生成してプレビュー表示する（TASK-19）
+ *  - 「絵日記を保存」ボタン: プレビュー中のカードを PNG として保存する（TASK-19）
  *  - 「おうちへ」ボタン: Visit を履歴に追記してストアから削除し、ホーム画面へ遷移する
  *
  * XSS対策: テキストの挿入はすべて textContent / createElement を使い、
@@ -14,6 +15,7 @@
 
 import { appendVisit, clearCurrentVisit } from '../store.js';
 import { goHome } from '../router.js';
+import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
 
 // ─────────────────────────────────────────────
 // モジュールスコープの状態
@@ -21,6 +23,9 @@ import { goHome } from '../router.js';
 
 /** 現在表示中の完了済み Visit。「おうちへ」ボタンで参照する */
 let currentVisit = null;
+
+/** 現在表示中の Visit に対応するスポット定義一覧。onMakeCard で参照する */
+let currentSpots = [];
 
 // ─────────────────────────────────────────────
 // 公開関数
@@ -37,11 +42,21 @@ let currentVisit = null;
  *   スポット定義の配列（スポット名の表示に使用）
  */
 export function initHomecomingScreen(visit, spots) {
-  // モジュールスコープに保持する（onGoHome で参照する）
+  // モジュールスコープに保持する（onGoHome / onMakeCard で参照する）
   currentVisit = visit;
+  currentSpots = spots || [];
 
   // 結果を描画する
   renderEventResult(visit, spots);
+
+  // 前の Visit のカードが残らないよう、プレビューを隠して保存ボタンを無効化する
+  const previewArea = document.getElementById('card-preview-area');
+  if (previewArea) previewArea.hidden = true;
+  const saveBtnInit = document.getElementById('save-card-btn');
+  if (saveBtnInit) {
+    saveBtnInit.disabled = true;
+    saveBtnInit.setAttribute('aria-disabled', 'true');
+  }
 
   // 「絵日記をつくる」ボタンのイベントを設定（重複登録を避けるため clone で差し替え）
   const makeCardBtn = document.getElementById('make-card-btn');
@@ -49,6 +64,14 @@ export function initHomecomingScreen(visit, spots) {
     const newMakeCardBtn = makeCardBtn.cloneNode(true);
     makeCardBtn.replaceWith(newMakeCardBtn);
     newMakeCardBtn.addEventListener('click', () => onMakeCard());
+  }
+
+  // 「絵日記を保存」ボタンのイベントを設定（重複登録を避けるため clone で差し替え）
+  const saveCardBtn = document.getElementById('save-card-btn');
+  if (saveCardBtn) {
+    const newSaveCardBtn = saveCardBtn.cloneNode(true);
+    saveCardBtn.replaceWith(newSaveCardBtn);
+    newSaveCardBtn.addEventListener('click', () => onSaveCard());
   }
 
   // 「おうちへ」ボタンのイベントを設定（重複登録を避けるため clone で差し替え）
@@ -211,13 +234,57 @@ function renderSouvenir(visit, spots) {
 }
 
 /**
- * 「絵日記をつくる」ボタンが押されたときの処理。
- * M6 実装まではスタブ。押したことをコンソールに記録する。
+ * 「絵日記をつくる」ボタンが押されたときの処理（TASK-19 本実装）。
+ * 設計書 3.3節どおり:
+ *  1. generateCard(cardData, canvas, spot) を await で呼ぶ
+ *  2. #card-preview-area を表示する
+ *  3. #save-card-btn を有効化する
  */
-function onMakeCard() {
-  // M6（src/domain/card-generator.js）で実装予定
-  console.info('[homecoming] 絵日記カード生成機能はM6で実装予定です');
-  alert('絵日記カード機能は近日公開予定です 📖');
+async function onMakeCard() {
+  if (!currentVisit || !currentVisit.cardData) {
+    console.error('[homecoming] cardData が設定されていません:', currentVisit);
+    return;
+  }
+
+  const canvas = document.getElementById('diary-card-canvas');
+  if (!canvas) {
+    console.error('[homecoming] #diary-card-canvas が見つかりません');
+    return;
+  }
+
+  // スポット定義を取得する（見つからなければテーマカラーのフォールバックを使う）
+  const spot = currentSpots.find(s => s.id === currentVisit.spotId)
+    || { themeColor: '#6a3fa0' };
+
+  await generateCard(currentVisit.cardData, canvas, spot);
+
+  const previewArea = document.getElementById('card-preview-area');
+  if (previewArea) previewArea.hidden = false;
+
+  const saveBtn = document.getElementById('save-card-btn');
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.setAttribute('aria-disabled', 'false');
+  }
+}
+
+/**
+ * 「絵日記を保存」ボタンが押されたときの処理。
+ * プレビュー中の Canvas を PNG ファイルとして端末に保存させる。
+ */
+function onSaveCard() {
+  if (!currentVisit || !currentVisit.cardData) {
+    console.error('[homecoming] cardData が設定されていません:', currentVisit);
+    return;
+  }
+
+  const canvas = document.getElementById('diary-card-canvas');
+  if (!canvas) {
+    console.error('[homecoming] #diary-card-canvas が見つかりません');
+    return;
+  }
+
+  downloadCardAsPng(canvas, currentVisit.cardData.returnedAt);
 }
 
 /**
