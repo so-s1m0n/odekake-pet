@@ -45,7 +45,7 @@ export const CARD_LAYOUT = {
 const MAX_EVENT_TEXT_LENGTH = 100;
 
 // ─────────────────────────────────────────────
-// 内部ヘルパー関数（export しない）
+// ヘルパー関数（truncateText / formatDateJa は単体テストのため export する）
 // ─────────────────────────────────────────────
 
 /**
@@ -56,26 +56,24 @@ const MAX_EVENT_TEXT_LENGTH = 100;
  * @param {number} [maxLen=100]
  * @returns {string}
  */
-function truncateText(text, maxLen = MAX_EVENT_TEXT_LENGTH) {
+export function truncateText(text, maxLen = MAX_EVENT_TEXT_LENGTH) {
   if (text.length <= maxLen) return text;
   // maxLen 文字目（index: maxLen-1）を「…」に置き換え
   return text.slice(0, maxLen - 1) + '…';
 }
 
 /**
- * ISO 8601 文字列を「YYYY年MM月DD日」形式に変換して返す。
- * `Intl.DateTimeFormat` を使用することでタイムゾーン依存を避ける。
+ * ISO 8601 文字列を「YYYY年M月D日」形式に変換して返す。
+ * Intl の ja-JP 数値書式は環境により「2026/11/2」のようなスラッシュ表記に
+ * なるため、年月日表記を保証するためにローカル日付から組み立てる。
+ * 月・日はゼロパディングしない。
  *
  * @param {string} isoString - ISO 8601 形式の日時文字列
  * @returns {string} 例: '2026年11月2日'
  */
-function formatDateJa(isoString) {
+export function formatDateJa(isoString) {
   const date = new Date(isoString);
-  return new Intl.DateTimeFormat('ja-JP', {
-    year:  'numeric',
-    month: 'numeric',
-    day:   'numeric',
-  }).format(date);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 /**

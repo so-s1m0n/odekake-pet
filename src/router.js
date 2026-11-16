@@ -11,7 +11,7 @@ const SCREEN_IDS = [
   'screen-odekake',    // M3: おでかけ選択画面
   'screen-waiting',    // M3: 不在中の待機画面
   'screen-homecoming', // M3: 帰宅・絵日記生成画面
-  // M6以降で追加: 'screen-album'
+  'screen-album',      // M6: おもいでアルバム画面
 ];
 
 /**
@@ -67,10 +67,8 @@ export function goHomecoming() {
 }
 
 /**
- * アルバム画面へ遷移する（M6実装まではスタブ）。
+ * おもいでアルバム画面（screen-album）を表示する。
  */
 export function goAlbum() {
-  // M6スペックで実装予定
-  console.info('[router] アルバム画面はM6で実装予定です');
-  alert('アルバム機能は近日公開予定です！');
+  showScreen('screen-album');
 }

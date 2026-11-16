@@ -62,6 +62,14 @@ export function initHomeScreen() {
     });
   }
 
+  // 「おもいでアルバム」ボタン（重複登録を防ぐため一度差し替えてから登録）
+  const albumBtn = document.getElementById('open-album-btn');
+  if (albumBtn) {
+    const newAlbumBtn = albumBtn.cloneNode(true);
+    albumBtn.parentNode.replaceChild(newAlbumBtn, albumBtn);
+    newAlbumBtn.addEventListener('click', () => goAlbum());
+  }
+
   // おもいで数を表示する（訪問履歴の件数）
   renderMemoriesCount();
 
@@ -176,6 +184,10 @@ function renderOdekakeStatus(pet) {
 
   // おでかけボタンの活性/非活性
   if (odekakeBtn) odekakeBtn.disabled = isAway;
+
+  // アルバムボタンは visiting 中は無効化する（TASK-22）
+  const albumBtn = document.getElementById('open-album-btn');
+  if (albumBtn) albumBtn.disabled = isVisiting;
 
   // おでかけ中メッセージ
   if (awayMsg && isAway) {

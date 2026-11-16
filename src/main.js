@@ -12,13 +12,14 @@
  *   hidden 属性を監視し、表示されるたびに対応する init 関数を呼び出す。
  */
 
-import { migrate, hasPet, loadCurrentVisit, saveCurrentVisit, loadPet, savePet } from './store.js';
+import { migrate, hasPet, loadCurrentVisit, saveCurrentVisit, loadPet, savePet, loadVisitsAll } from './store.js';
 import { goSetup, goHome, goWaiting, goHomecoming } from './router.js';
 import { initSetupScreen }      from './screens/setup.js';
 import { initHomeScreen }       from './screens/home.js';
 import { initOdekakeScreen }    from './screens/odekake.js';
 import { initWaitingScreen, stopWaitingTimer } from './screens/waiting.js';
 import { initHomecomingScreen } from './screens/homecoming.js';
+import { initAlbumScreen }      from './screens/album.js';
 import { isReturnReady, completeVisit } from './domain/visit.js';
 import { generateEvent }        from './domain/event-generator.js';
 import { transitionPetState, PET_STATE } from './domain/pet.js';
@@ -81,6 +82,10 @@ async function bootstrap() {
     if (visit) {
       initHomecomingScreen(visit, spotsData);
     }
+  });
+
+  watchScreen('screen-album', () => {
+    initAlbumScreen(loadVisitsAll(), spotsData);
   });
 
   // ─── 7. 起動時の状態チェック ───
