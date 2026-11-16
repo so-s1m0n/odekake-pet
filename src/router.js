@@ -12,6 +12,7 @@ const SCREEN_IDS = [
   'screen-waiting',    // M3: 不在中の待機画面
   'screen-homecoming', // M3: 帰宅・絵日記生成画面
   'screen-album',      // M6: おもいでアルバム画面
+  'screen-footprints', // M7: あしあと画面
 ];
 
 /**
@@ -71,4 +72,11 @@ export function goHomecoming() {
  */
 export function goAlbum() {
   showScreen('screen-album');
+}
+
+/**
+ * あしあと画面（screen-footprints）を表示する。
+ */
+export function goFootprints() {
+  showScreen('screen-footprints');
 }

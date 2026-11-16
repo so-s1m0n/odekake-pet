@@ -9,13 +9,14 @@
 // ─────────────────────────────────────────────
 
 /** 現在のデータスキーマバージョン */
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 /** localStorageキーの一覧 */
 const KEYS = {
   PET:            'odekakepet::pet::current',
   VISIT_CURRENT:  'odekakepet::visit::current',  // 進行中のVisit（1件のみ）
   VISITS_ALL:     'odekakepet::visits::all',      // 完了済みVisitの履歴（配列）
+  FOOTPRINTS_ALL: 'odekakepet::footprints::all',  // 足跡（来訪）記録の履歴（配列）
   SCHEMA_VERSION: 'odekakepet::settings::version',
 };
 
@@ -40,6 +41,10 @@ export function migrate() {
       // v1 → v2: Visit関連キーを初期化する
       migrate_v1_to_v2();
     }
+    if (storedVersion < 3) {
+      // v2 → v3: 足跡（来訪）記録キーを初期化する
+      migrate_v2_to_v3();
+    }
     localStorage.setItem(KEYS.SCHEMA_VERSION, String(SCHEMA_VERSION));
   }
 }
@@ -57,6 +62,17 @@ function migrate_v1_to_v2() {
   if (localStorage.getItem(KEYS.VISITS_ALL) === null) {
     // 履歴が存在しなければ空配列で初期化する
     localStorage.setItem(KEYS.VISITS_ALL, JSON.stringify([]));
+  }
+}
+
+/**
+ * スキーマ v2 → v3 のマイグレーション（M7）。
+ * 足跡（来訪）記録のキーが存在しなければ空配列で初期化する。
+ * 既存データには触れないため、既に存在する場合はスキップする。
+ */
+function migrate_v2_to_v3() {
+  if (localStorage.getItem(KEYS.FOOTPRINTS_ALL) === null) {
+    localStorage.setItem(KEYS.FOOTPRINTS_ALL, JSON.stringify([]));
   }
 }
 
@@ -192,5 +208,41 @@ export function appendVisit(visit) {
     localStorage.setItem(KEYS.VISITS_ALL, JSON.stringify(all));
   } catch (e) {
     console.error('[store] Visit履歴への追記に失敗しました:', e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// 足跡（来訪）記録の読み書き（M7）
+// ─────────────────────────────────────────────
+
+/**
+ * 足跡（来訪）記録をすべて読み込む。
+ * 存在しない場合は空配列を返す。
+ *
+ * @returns {Object[]} FootprintRecord の配列（形式は friend-visit 設計書 2.3節）
+ */
+export function loadFootprints() {
+  try {
+    const json = localStorage.getItem(KEYS.FOOTPRINTS_ALL);
+    if (!json) return [];
+    return JSON.parse(json);
+  } catch (e) {
+    console.error('[store] 足跡記録の読み込みに失敗しました:', e);
+    return [];
+  }
+}
+
+/**
+ * 足跡（来訪）記録を1件追記する。
+ *
+ * @param {Object} record - FootprintRecord
+ */
+export function appendFootprint(record) {
+  try {
+    const all = loadFootprints();
+    all.push(record);
+    localStorage.setItem(KEYS.FOOTPRINTS_ALL, JSON.stringify(all));
+  } catch (e) {
+    console.error('[store] 足跡記録への追記に失敗しました:', e);
   }
 }
