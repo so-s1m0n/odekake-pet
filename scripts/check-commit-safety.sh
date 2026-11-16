@@ -21,6 +21,8 @@ done < <(git ls-files '.kiro/*')
 echo "== 2. 資格情報ファイルの混入検査 =="
 while IFS= read -r f; do
   case "$f" in
+    # この検査フック自身の定義ファイルは「秘密について述べたファイル」であって秘密ではないため除外
+    .kiro/hooks/secret-check-before-commit.json) ;;
     *.pem|*.key|*credentials*|*secret*|.env|*/.env|*id_rsa*|*id_ed25519*)
       echo "NG: 資格情報と疑われるファイル: $f"; fail=1 ;;
   esac
