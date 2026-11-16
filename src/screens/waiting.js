@@ -15,6 +15,7 @@
 
 import { isReturnReady, getVisitTiming, completeVisit } from '../domain/visit.js';
 import { generateEvent } from '../domain/event-generator.js';
+import { loadSyntheticSpot } from '../domain/synthetic-spot.js';
 import { transitionPetState, PET_STATE } from '../domain/pet.js';
 import { loadPet, savePet, loadCurrentVisit, saveCurrentVisit } from '../store.js';
 import { goHomecoming } from '../router.js';
@@ -104,8 +105,9 @@ export function stopWaitingTimer() {
  * @param {import('../domain/event-generator.js').SpotDef[]} spots
  */
 function renderWaitingHeader(visit, spots) {
-  // スポット名を表示する
-  const spot = spots.find(s => s.id === visit.spotId);
+  // スポット名を表示する（友達訪問の場合は合成スポットをキャッシュから引く）
+  const spot = spots.find(s => s.id === visit.spotId)
+    || (visit.isFriendVisit ? loadSyntheticSpot() : null);
   const spotNameEl = document.getElementById('waiting-spot-name');
   if (spotNameEl) {
     if (spot) {
@@ -251,8 +253,9 @@ function executeReturn(visit, spots) {
     return;
   }
 
-  // スポット定義を取得する
-  const spot = spots.find(s => s.id === visit.spotId);
+  // スポット定義を取得する（友達訪問の場合は合成スポットをキャッシュから引く）
+  const spot = spots.find(s => s.id === visit.spotId)
+    || (visit.isFriendVisit ? loadSyntheticSpot() : null);
   if (!spot) {
     console.error('[waiting] スポットが見つかりません:', visit.spotId);
     return;

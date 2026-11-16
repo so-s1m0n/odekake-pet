@@ -16,6 +16,8 @@
 import { appendVisit, clearCurrentVisit } from '../store.js';
 import { goHome } from '../router.js';
 import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
+import { encodeFootprintCode } from '../domain/odekake-code.js';
+import { clearSyntheticSpot } from '../domain/synthetic-spot.js';
 
 // ─────────────────────────────────────────────
 // モジュールスコープの状態
@@ -80,6 +82,81 @@ export function initHomecomingScreen(visit, spots) {
     const newGoHomeBtn = goHomeBtn.cloneNode(true);
     goHomeBtn.replaceWith(newGoHomeBtn);
     newGoHomeBtn.addEventListener('click', () => onGoHome());
+  }
+
+  // 足跡コード発行ボタンは友達訪問のときだけ表示する（M7・TASK-36）
+  const issueFootprintBtn = document.getElementById('issue-footprint-code-btn');
+  if (issueFootprintBtn) {
+    issueFootprintBtn.hidden = visit.isFriendVisit !== true;
+    const newIssueBtn = issueFootprintBtn.cloneNode(true);
+    issueFootprintBtn.replaceWith(newIssueBtn);
+    newIssueBtn.hidden = visit.isFriendVisit !== true;
+    newIssueBtn.addEventListener('click', () => onIssueFootprintCode());
+  }
+
+  // 足跡コードモーダルのコピー・閉じるボタン（M7・TASK-36）
+  const copyFootprintBtn = document.getElementById('copy-footprint-code-btn');
+  if (copyFootprintBtn) {
+    const newCopyBtn = copyFootprintBtn.cloneNode(true);
+    copyFootprintBtn.replaceWith(newCopyBtn);
+    newCopyBtn.addEventListener('click', () => onCopyFootprintCode());
+  }
+  const closeFootprintBtn = document.getElementById('close-footprint-code-modal-btn');
+  if (closeFootprintBtn) {
+    const newCloseBtn = closeFootprintBtn.cloneNode(true);
+    closeFootprintBtn.replaceWith(newCloseBtn);
+    newCloseBtn.addEventListener('click', () => {
+      const modal = document.getElementById('footprint-code-modal');
+      if (modal) modal.hidden = true;
+    });
+  }
+}
+
+/**
+ * 「足跡コードを発行」ボタンが押されたときの処理（M7・TASK-36）。
+ * 完了済み Visit の cardData から足跡コードを生成してモーダルに表示する。
+ */
+function onIssueFootprintCode() {
+  if (!currentVisit || !currentVisit.cardData) {
+    console.error('[homecoming] cardData が設定されていません:', currentVisit);
+    return;
+  }
+  const { cardData } = currentVisit;
+  const { code, error } = encodeFootprintCode({
+    v: 1,
+    visitorPetName: cardData.petName,
+    visitorPetType: cardData.petType,
+    visitedAt: cardData.returnedAt,
+    eventSummary: cardData.eventText,
+  });
+  if (error) {
+    alert(error);
+    return;
+  }
+  const output = document.getElementById('footprint-code-output');
+  if (output) output.value = code;
+  const modal = document.getElementById('footprint-code-modal');
+  if (modal) modal.hidden = false;
+}
+
+/**
+ * 「コピー」ボタン（足跡コード）が押されたときの処理（M7・TASK-36）。
+ * クリップボードへコピーし、ラベルを2秒間「コピーしました！」に変える。
+ */
+async function onCopyFootprintCode() {
+  const output = document.getElementById('footprint-code-output');
+  const btn = document.getElementById('copy-footprint-code-btn');
+  if (!output) return;
+  try {
+    await navigator.clipboard.writeText(output.value);
+    if (btn) {
+      const original = btn.textContent;
+      btn.textContent = 'コピーしました！';
+      setTimeout(() => { btn.textContent = original; }, 2000);
+    }
+  } catch (e) {
+    console.error('[homecoming] クリップボードへのコピーに失敗しました:', e);
+    output.select();
   }
 }
 
@@ -304,6 +381,7 @@ function onGoHome() {
   // Visit を履歴に追記してから進行中のVisitを削除する
   appendVisit(currentVisit);
   clearCurrentVisit();
+  clearSyntheticSpot();
 
   // モジュールスコープの状態をリセット
   currentVisit = null;

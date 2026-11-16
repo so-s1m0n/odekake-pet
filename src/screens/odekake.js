@@ -15,6 +15,8 @@ import { createVisit } from '../domain/visit.js';
 import { transitionPetState } from '../domain/pet.js';
 import { loadPet, savePet, saveCurrentVisit } from '../store.js';
 import { goHome, goWaiting } from '../router.js';
+import { decodeFriendCode, shortHash } from '../domain/odekake-code.js';
+import { saveSyntheticSpot } from '../domain/synthetic-spot.js';
 
 // ─────────────────────────────────────────────
 // モジュールスコープの状態
@@ -22,6 +24,12 @@ import { goHome, goWaiting } from '../router.js';
 
 /** 現在選択中のスポットID（未選択は null）*/
 let selectedSpotId = null;
+
+/** 友達訪問用イベントテンプレート（friend-events.json。M7） */
+let currentFriendEvents = [];
+
+/** 検証済みのおともだちコードのペイロード（未検証は null。M7） */
+let verifiedPayload = null;
 
 // ─────────────────────────────────────────────
 // 公開関数
@@ -34,12 +42,38 @@ let selectedSpotId = null;
  * @param {import('../domain/event-generator.js').SpotDef[]} spots
  *   spots.json から読み込んだスポット定義の配列
  */
-export function initOdekakeScreen(spots) {
+export function initOdekakeScreen(spots, friendEvents = []) {
   // 選択状態をリセット
   selectedSpotId = null;
+  currentFriendEvents = friendEvents || [];
+  verifiedPayload = null;
 
   // スポット一覧を描画する
   renderSpotList(spots);
+
+  // 友達コード入力まわりを初期状態に戻す（M7）
+  const friendInput = document.getElementById('friend-code-input');
+  if (friendInput) friendInput.value = '';
+  const friendError = document.getElementById('friend-code-error');
+  if (friendError) friendError.hidden = true;
+  const friendPreview = document.getElementById('friend-code-preview');
+  if (friendPreview) friendPreview.hidden = true;
+
+  // 「このコードで訪問」ボタンのイベントを設定（clone で差し替え）
+  const verifyBtn = document.getElementById('verify-friend-code-btn');
+  if (verifyBtn) {
+    const newVerifyBtn = verifyBtn.cloneNode(true);
+    verifyBtn.replaceWith(newVerifyBtn);
+    newVerifyBtn.addEventListener('click', () => onVerifyFriendCode());
+  }
+
+  // 「出発する」ボタン（友達訪問用）のイベントを設定（clone で差し替え）
+  const departFriendBtn = document.getElementById('depart-friend-btn');
+  if (departFriendBtn) {
+    const newDepartFriendBtn = departFriendBtn.cloneNode(true);
+    departFriendBtn.replaceWith(newDepartFriendBtn);
+    newDepartFriendBtn.addEventListener('click', () => onDepartFriend());
+  }
 
   // 出発ボタンを非活性で初期化
   const departBtn = document.getElementById('depart-btn');
@@ -181,6 +215,83 @@ function onSpotSelect(spotId) {
   const hasSelection = selectedSpotId !== null;
   departBtn.disabled = !hasSelection;
   departBtn.setAttribute('aria-disabled', String(!hasSelection));
+}
+
+/**
+ * 「このコードで訪問」ボタンが押されたときの処理（M7）。
+ * おともだちコードを検証し、成功したらプレビューを表示する。
+ */
+function onVerifyFriendCode() {
+  const input = document.getElementById('friend-code-input');
+  const errorEl = document.getElementById('friend-code-error');
+  const previewEl = document.getElementById('friend-code-preview');
+  const previewTextEl = document.getElementById('friend-code-preview-text');
+  if (!input || !errorEl || !previewEl || !previewTextEl) return;
+
+  const { payload, error } = decodeFriendCode(input.value);
+  if (error) {
+    verifiedPayload = null;
+    errorEl.textContent = error;
+    errorEl.hidden = false;
+    previewEl.hidden = true;
+    return;
+  }
+
+  verifiedPayload = payload;
+  errorEl.hidden = true;
+  previewTextEl.textContent = `${payload.petName} ちゃんのおうちを訪問します`;
+  previewEl.hidden = false;
+}
+
+/**
+ * FriendCodePayload と友達訪問用イベントから合成スポット定義を組み立てる（M7）。
+ * イベント文の {hostName} はここでホスト名に置換しておく（設計書 2.5節）。
+ *
+ * @param {import('../domain/odekake-code.js').FriendCodePayload} payload
+ * @param {Object[]} friendEvents - friend-events.json のテンプレート群
+ * @returns {Object} SyntheticSpot
+ */
+function buildSyntheticSpot(payload, friendEvents) {
+  return {
+    id: 'friend-' + shortHash(payload.petName),
+    displayName: `${payload.petName} のおうち`,
+    themeColor: '#b8d4e8',
+    icon: '🏠',
+    events: (friendEvents || []).map(t => ({
+      ...t,
+      text: t.text.replaceAll('{hostName}', payload.petName),
+    })),
+    hostPet: {
+      name: payload.petName,
+      type: payload.petType,
+      personality: { curiosity: payload.curiosity, sociability: payload.sociability },
+    },
+  };
+}
+
+/**
+ * 「出発する」ボタン（友達訪問用）が押されたときの処理（M7）。
+ * 合成スポットをセッションに保存し、isFriendVisit フラグ付きの Visit で出発する。
+ */
+function onDepartFriend() {
+  if (!verifiedPayload) return;
+
+  const pet = loadPet();
+  if (!pet) {
+    console.error('[odekake] ペットデータが見つかりません');
+    return;
+  }
+
+  const syntheticSpot = buildSyntheticSpot(verifiedPayload, currentFriendEvents);
+  saveSyntheticSpot(syntheticSpot);
+
+  const visit = { ...createVisit(syntheticSpot.id), isFriendVisit: true };
+  saveCurrentVisit(visit);
+
+  const visitingPet = transitionPetState(pet, 'visiting');
+  savePet(visitingPet);
+
+  goWaiting();
 }
 
 /**

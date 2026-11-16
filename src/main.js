@@ -12,7 +12,7 @@
  *   hidden 属性を監視し、表示されるたびに対応する init 関数を呼び出す。
  */
 
-import { migrate, hasPet, loadCurrentVisit, saveCurrentVisit, loadPet, savePet, loadVisitsAll } from './store.js';
+import { migrate, hasPet, loadCurrentVisit, saveCurrentVisit, loadPet, savePet, loadVisitsAll, loadFootprints } from './store.js';
 import { goSetup, goHome, goWaiting, goHomecoming } from './router.js';
 import { initSetupScreen }      from './screens/setup.js';
 import { initHomeScreen }       from './screens/home.js';
@@ -20,6 +20,8 @@ import { initOdekakeScreen }    from './screens/odekake.js';
 import { initWaitingScreen, stopWaitingTimer } from './screens/waiting.js';
 import { initHomecomingScreen } from './screens/homecoming.js';
 import { initAlbumScreen }      from './screens/album.js';
+import { initFootprintsScreen } from './screens/footprints.js';
+import { loadSyntheticSpot }    from './domain/synthetic-spot.js';
 import { isReturnReady, completeVisit } from './domain/visit.js';
 import { generateEvent }        from './domain/event-generator.js';
 import { transitionPetState, PET_STATE } from './domain/pet.js';
@@ -56,15 +58,25 @@ async function bootstrap() {
     console.error('[main] data/spots.json の読み込みに失敗しました:', e);
   }
 
+  // ─── 3b. friend-events.json の読み込み（M7） ───
+  let friendEvents = [];
+  try {
+    const res  = await fetch('./data/friend-events.json');
+    const json = await res.json();
+    friendEvents = json.events;
+  } catch (e) {
+    console.error('[main] data/friend-events.json の読み込みに失敗しました:', e);
+  }
+
   // ─── 4. 静的な画面を初期化しておく ───
   //   （hidden のまま初期化。ルーター切り替え後に即座に動作する）
-  initHomeScreen();
+  initHomeScreen(loadFootprints());
   initSetupScreen(petTypes);
-  initOdekakeScreen(spotsData);
+  initOdekakeScreen(spotsData, friendEvents);
 
   // ─── 5. ペット登録完了後にホーム画面を再初期化するハンドラ ───
   document.addEventListener('petregistered', () => {
-    initHomeScreen();
+    initHomeScreen(loadFootprints());
   });
 
   // ─── 6. 待機画面・帰宅画面の表示フック ───
@@ -80,12 +92,22 @@ async function bootstrap() {
   watchScreen('screen-homecoming', () => {
     const visit = loadCurrentVisit();
     if (visit) {
-      initHomecomingScreen(visit, spotsData);
+      // 友達訪問の場合は合成スポットをスポット一覧に足して渡す（M7）
+      let spotsArg = spotsData;
+      if (visit.isFriendVisit) {
+        const synthetic = loadSyntheticSpot();
+        if (synthetic) spotsArg = [...spotsData, synthetic];
+      }
+      initHomecomingScreen(visit, spotsArg);
     }
   });
 
   watchScreen('screen-album', () => {
     initAlbumScreen(loadVisitsAll(), spotsData);
+  });
+
+  watchScreen('screen-footprints', () => {
+    initFootprintsScreen(loadFootprints());
   });
 
   // ─── 7. 起動時の状態チェック ───
@@ -160,7 +182,8 @@ function watchScreen(screenId, onShow) {
  * @returns {import('./domain/visit.js').Visit | null} 完了済みVisit（失敗時null）
  */
 function executeReturnOnStartup(visit, spots, pet) {
-  const spot = spots.find(s => s.id === visit.spotId);
+  const spot = spots.find(s => s.id === visit.spotId)
+    || (visit.isFriendVisit ? loadSyntheticSpot() : null);
   if (!spot) {
     console.error('[main] 帰宅処理: スポットが見つかりません:', visit.spotId);
     return null;

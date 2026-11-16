@@ -22,6 +22,13 @@ export const PET_TYPES = [
   'mameshiba',
 ];
 
+/** ペット種類ID → 表示用絵文字アイコン（M7 足跡表示などで使用） */
+export const PET_TYPE_ICONS = {
+  'hoshikuzu-usagi': '🐰',
+  'soraaru-penguin': '🐧',
+  'mameshiba': '🐕',
+};
+
 /** 世話アクションの種類 */
 export const CARE_ACTIONS = {
   EAT:    'eat',

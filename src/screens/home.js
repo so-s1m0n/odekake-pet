@@ -4,9 +4,10 @@
  * ペットの表示、世話アクション、状態に応じた表示切り替えを担当する。
  */
 
-import { applyCareAction, PET_STATE, isAtHome } from '../domain/pet.js';
+import { applyCareAction, PET_STATE, PET_TYPE_ICONS, isAtHome } from '../domain/pet.js';
 import { loadPet, savePet, loadVisitsAll } from '../store.js';
-import { goOdekake, goWaiting, goAlbum } from '../router.js';
+import { goOdekake, goWaiting, goAlbum, goFootprints } from '../router.js';
+import { encodeFriendCode, CODE_VERSION } from '../domain/odekake-code.js';
 
 // ─────────────────────────────────────────────
 // 定数
@@ -30,7 +31,7 @@ let isAnimating = false;
  * ホーム画面を初期化し、ペットデータを読み込んで描画する。
  * main.js の DOMContentLoaded 後、またはペット登録完了後に呼ぶこと。
  */
-export function initHomeScreen() {
+export function initHomeScreen(footprints = []) {
   const pet = loadPet();
   if (!pet) {
     console.error('[home] ペットデータが存在しません');
@@ -73,7 +74,121 @@ export function initHomeScreen() {
   // おもいで数を表示する（訪問履歴の件数）
   renderMemoriesCount();
 
+  // 足跡通知エリアを描画する（M7・TASK-34）
+  renderFootprintNotice(footprints || []);
+
+  // 「おともだちコードを発行」ボタン（clone で差し替え）
+  const issueBtn = document.getElementById('issue-friend-code-btn');
+  if (issueBtn) {
+    const newIssueBtn = issueBtn.cloneNode(true);
+    issueBtn.parentNode.replaceChild(newIssueBtn, issueBtn);
+    newIssueBtn.addEventListener('click', () => onIssueFriendCode());
+  }
+
+  // コード発行モーダルのコピー・閉じるボタン（clone で差し替え）
+  const copyBtn = document.getElementById('copy-friend-code-btn');
+  if (copyBtn) {
+    const newCopyBtn = copyBtn.cloneNode(true);
+    copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+    newCopyBtn.addEventListener('click', () => onCopyFriendCode());
+  }
+  const closeBtn = document.getElementById('close-friend-code-modal-btn');
+  if (closeBtn) {
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    newCloseBtn.addEventListener('click', () => {
+      const modal = document.getElementById('friend-code-modal');
+      if (modal) modal.hidden = true;
+    });
+  }
+
+  // 「あしあとを見る」ボタン（clone で差し替え）
+  const footprintsBtn = document.getElementById('open-footprints-btn');
+  if (footprintsBtn) {
+    const newFootprintsBtn = footprintsBtn.cloneNode(true);
+    footprintsBtn.parentNode.replaceChild(newFootprintsBtn, footprintsBtn);
+    newFootprintsBtn.addEventListener('click', () => goFootprints());
+  }
+
   renderPet(pet);
+}
+
+/**
+ * 足跡通知エリアを描画する（M7・TASK-34）。
+ * 0件ならエリア全体を隠し、1件以上なら直近3件を新しい順に並べる。
+ *
+ * @param {Object[]} footprints - FootprintRecord の配列
+ */
+function renderFootprintNotice(footprints) {
+  const notice = document.getElementById('footprint-notice');
+  const list = document.getElementById('footprint-notice-list');
+  if (!notice || !list) return;
+
+  while (list.firstChild) {
+    list.removeChild(list.firstChild);
+  }
+
+  if (!footprints || footprints.length === 0) {
+    notice.hidden = true;
+    return;
+  }
+
+  const recent = [...footprints]
+    .sort((a, b) => new Date(b.visitedAt) - new Date(a.visitedAt))
+    .slice(0, 3);
+  for (const record of recent) {
+    const li = document.createElement('li');
+    const icon = PET_TYPE_ICONS[record.visitorPetType] || '🐾';
+    li.textContent = `${record.visitorPetName}ちゃんが遊びに来たよ ${icon}`;
+    list.appendChild(li);
+  }
+  notice.hidden = false;
+}
+
+/**
+ * 「おともだちコードを発行」ボタンが押されたときの処理（M7・TASK-34）。
+ * ペットがおでかけ中のときは何もしない。
+ */
+function onIssueFriendCode() {
+  const pet = loadPet();
+  if (!pet || pet.state !== PET_STATE.HOME) return;
+
+  const { code, error } = encodeFriendCode({
+    v: CODE_VERSION,
+    petName: pet.name,
+    petType: pet.type,
+    curiosity: pet.personality.curiosity,
+    sociability: pet.personality.sociability,
+    issuedAt: new Date().toISOString(),
+  });
+  if (error) {
+    alert(error);
+    return;
+  }
+  const output = document.getElementById('friend-code-output');
+  if (output) output.value = code;
+  const modal = document.getElementById('friend-code-modal');
+  if (modal) modal.hidden = false;
+}
+
+/**
+ * 「コピー」ボタン（おともだちコード）が押されたときの処理（M7・TASK-34）。
+ */
+async function onCopyFriendCode() {
+  const output = document.getElementById('friend-code-output');
+  const btn = document.getElementById('copy-friend-code-btn');
+  if (!output) return;
+  try {
+    await navigator.clipboard.writeText(output.value);
+    if (btn) {
+      const original = btn.textContent;
+      btn.textContent = 'コピーしました！';
+      setTimeout(() => { btn.textContent = original; }, 2000);
+    }
+  } catch (e) {
+    console.error('[home] クリップボードへのコピーに失敗しました:', e);
+    output.select();
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -188,6 +303,10 @@ function renderOdekakeStatus(pet) {
   // アルバムボタンは visiting 中は無効化する（TASK-22）
   const albumBtn = document.getElementById('open-album-btn');
   if (albumBtn) albumBtn.disabled = isVisiting;
+
+  // コード発行ボタンはおでかけ中は無効化する（M7・TASK-34）
+  const issueBtn = document.getElementById('issue-friend-code-btn');
+  if (issueBtn) issueBtn.disabled = isAway;
 
   // おでかけ中メッセージ
   if (awayMsg && isAway) {
