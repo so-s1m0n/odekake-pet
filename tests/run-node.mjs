@@ -52,6 +52,7 @@ globalThis.assert = {
 await import('./visit.test.js');
 await import('./event-generator.test.js');
 await import('./card-generator.test.js');
+await import('./visit-property.test.js');
 
 console.log(`== ${pass} pass / ${fail} fail ==`);
 process.exit(fail ? 1 : 0);
