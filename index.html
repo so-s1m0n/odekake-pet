@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="styles/screens/waiting.css">
   <link rel="stylesheet" href="styles/screens/homecoming.css">
   <link rel="stylesheet" href="styles/screens/album.css">
+  <link rel="stylesheet" href="styles/screens/footprints.css">
 
   <!-- アプリのエントリポイント（ES Modules） -->
   <script type="module" src="src/main.js"></script>
@@ -263,7 +264,32 @@
         おもいでアルバム
       </button>
 
+      <!-- おともだちコード発行ボタン（M7・TASK-30） -->
+      <button id="issue-friend-code-btn" class="btn btn--secondary">
+        おともだちコードを発行
+      </button>
+
+      <!-- 足跡通知エリア（M7・TASK-30。来訪があるときだけ表示） -->
+      <section id="footprint-notice" class="footprint-notice" hidden>
+        <h2 class="footprint-notice__title">🐾 あしあと</h2>
+        <ul id="footprint-notice-list" class="footprint-notice__list"></ul>
+        <button id="open-footprints-btn" class="btn btn--link">あしあとを見る →</button>
+      </section>
+
     </main>
+
+    <!-- おともだちコード発行モーダル（M7・TASK-30） -->
+    <div id="friend-code-modal" class="modal" hidden role="dialog" aria-modal="true"
+         aria-labelledby="friend-code-modal-title">
+      <div class="modal__inner">
+        <h2 id="friend-code-modal-title" class="modal__title">おともだちコード</h2>
+        <p class="modal__lead">友達にこのコードを渡してね</p>
+        <textarea id="friend-code-output" class="code-textarea" readonly rows="4"
+                  aria-label="おともだちコード"></textarea>
+        <button id="copy-friend-code-btn" class="btn btn--primary">コピー</button>
+        <button id="close-friend-code-modal-btn" class="btn btn--link">閉じる</button>
+      </div>
+    </div>
   </section><!-- /#screen-home -->
 
 
@@ -300,6 +326,25 @@
       >
         おでかけ！ ✈
       </button>
+
+      <!-- おともだちコードでの訪問（M7・TASK-30） -->
+      <div class="odekake__divider">── または ──</div>
+
+      <section class="friend-code-section">
+        <h2 class="friend-code-section__title">友達のコードで訪問する</h2>
+        <textarea id="friend-code-input" class="code-textarea"
+                  placeholder="コードをここに貼り付けてね"
+                  rows="3" aria-label="おともだちコードの入力"></textarea>
+        <p id="friend-code-error" class="friend-code-section__error" hidden
+           role="alert"></p>
+        <button id="verify-friend-code-btn" class="btn btn--secondary">
+          このコードで訪問
+        </button>
+        <div id="friend-code-preview" class="friend-code-preview" hidden>
+          <p id="friend-code-preview-text" class="friend-code-preview__text"></p>
+          <button id="depart-friend-btn" class="btn btn--primary">出発する ✈</button>
+        </div>
+      </section>
 
     </main>
   </section><!-- /#screen-odekake -->
@@ -390,6 +435,11 @@
         絵日記をつくる 📖
       </button>
 
+      <!-- 足跡コード発行ボタン（M7・TASK-30。友達訪問のときだけ表示） -->
+      <button id="issue-footprint-code-btn" class="btn btn--secondary" hidden>
+        足跡コードを発行 🐾
+      </button>
+
       <!-- 絵日記カードのプレビュー（生成後に表示。TASK-17） -->
       <div id="card-preview-area" class="card-preview-area" hidden>
         <canvas id="diary-card-canvas" class="card-preview-area__canvas"
@@ -406,6 +456,19 @@
       </button>
 
     </main>
+
+    <!-- 足跡コード発行モーダル（M7・TASK-30） -->
+    <div id="footprint-code-modal" class="modal" hidden role="dialog" aria-modal="true"
+         aria-labelledby="footprint-code-modal-title">
+      <div class="modal__inner">
+        <h2 id="footprint-code-modal-title" class="modal__title">足跡コード</h2>
+        <p class="modal__lead">友達にこのコードを渡してね</p>
+        <textarea id="footprint-code-output" class="code-textarea" readonly rows="4"
+                  aria-label="足跡コード"></textarea>
+        <button id="copy-footprint-code-btn" class="btn btn--primary">コピー</button>
+        <button id="close-footprint-code-modal-btn" class="btn btn--link">閉じる</button>
+      </div>
+    </div>
   </section><!-- /#screen-homecoming -->
 
 
@@ -450,6 +513,42 @@
 
     </main>
   </section><!-- /#screen-album -->
+
+
+  <!-- ════════════════════════════════════════════
+       あしあと画面 — screen-footprints（M7・TASK-30）
+  ════════════════════════════════════════════ -->
+  <section id="screen-footprints" class="screen" hidden>
+    <header class="screen__header">
+      <button id="footprints-back-btn" class="screen__back-btn">← ホームへ</button>
+      <h1 class="screen__title">あしあと</h1>
+    </header>
+    <main class="screen__body">
+
+      <!-- 足跡コード入力 -->
+      <section class="footprint-input-section">
+        <h2 class="footprint-input-section__title">足跡コードを入力する</h2>
+        <textarea id="footprint-code-input" class="code-textarea"
+                  placeholder="コードをここに貼り付けてね"
+                  rows="3" aria-label="足跡コードの入力"></textarea>
+        <p id="footprint-input-error" class="footprint-input-section__error" hidden
+           role="alert"></p>
+        <p id="footprint-input-success" class="footprint-input-section__success" hidden
+           role="status"></p>
+        <button id="record-footprint-btn" class="btn btn--primary">足跡を記録</button>
+      </section>
+
+      <!-- 来訪履歴 -->
+      <section class="footprint-list-section">
+        <h2 class="footprint-list-section__title">これまでの来訪</h2>
+        <ul id="footprint-list" class="footprint-list" aria-live="polite"></ul>
+        <p id="footprint-list-empty" class="footprint-list__empty" hidden>
+          まだ来訪記録がないよ
+        </p>
+      </section>
+
+    </main>
+  </section><!-- /#screen-footprints -->
 
 
   <!-- ════════════════════════════════════════════

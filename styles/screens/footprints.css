@@ -1,0 +1,82 @@
+/*
+ * styles/screens/footprints.css
+ * あしあと画面（screen-footprints）固有のスタイル（M7・TASK-31）。
+ * 共通部品（.code-textarea など）は components.css に置く。
+ */
+
+/* ─────────────────────────────────────────────
+   足跡コード入力
+   ───────────────────────────────────────────── */
+
+.footprint-input-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footprint-input-section__title {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.footprint-input-section__error {
+  color: var(--color-danger);
+}
+
+.footprint-input-section__success {
+  color: var(--color-accent-dark);
+}
+
+/* ─────────────────────────────────────────────
+   来訪履歴リスト
+   ───────────────────────────────────────────── */
+
+.footprint-list-section__title {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.footprint-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footprint-list__item {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.footprint-list__head {
+  color: var(--color-text);
+  margin-bottom: var(--space-1, 0.25rem);
+}
+
+.footprint-list__date {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.footprint-list__summary {
+  color: var(--color-text-sub);
+  margin-top: var(--space-2);
+}
+
+.footprint-list__empty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-5);
+}
