@@ -1,0 +1,1 @@
+{"description":"src 配下の JS を保存したら、全 JS の構文チェックと単体テスト（node ランナー）を実行し、状態遷移まわりの回帰を早期に検出する。CONCEPT 5.3 の第1フック。","name":"Run Tests On Save","then":{"command":"for f in $(find src -name '*.js'); do node --check \"$f\" || exit 1; done && TZ=Asia/Tokyo node tests/run-node.mjs","type":"runCommand"},"when":{"patterns":["src/**/*.js"],"type":"fileEdited"}}
