@@ -373,3 +373,27 @@ describe('generateEvent — 実データ（spots.jsonから）', () => {
     }
   });
 });
+
+// ─── M7: hostName 引数（TASK-40） ────────────────────────────────────────────
+
+describe('generateEvent — hostName（M7）', () => {
+  const friendSpot = {
+    id: 'friend-test', displayName: 'ゆき のおうち', themeColor: '#b8d4e8', icon: '🏠',
+    souvenirs: [],
+    events: [
+      { id: 'friend-t1', text: '{petName} は {hostName} のおうちで遊んだ。', souvenirId: null, conditions: null },
+    ],
+  };
+
+  it('hostName を渡すと {hostName} が置換され、残らない', () => {
+    const result = generateEvent(friendSpot, PET_NORMAL, makeDate(12), 'ゆき');
+    assert.notIncludes(result.eventText, '{hostName}', '{hostName} が残っていない');
+    assert.includes(result.eventText, 'ゆき', 'ホスト名が入っている');
+    assert.notIncludes(result.eventText, '{petName}', '{petName} も置換済み');
+  });
+
+  it('hostName を省略すると {hostName} は空文字に置換される（後方互換）', () => {
+    const result = generateEvent(friendSpot, PET_NORMAL, makeDate(12));
+    assert.notIncludes(result.eventText, '{hostName}', 'プレースホルダーが残らない');
+  });
+});
