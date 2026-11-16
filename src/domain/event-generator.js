@@ -91,15 +91,17 @@ export function getTimeOfDay(date) {
  * 2. フィルタ後0件なら、conditions が null のテンプレートのみを候補にする（フォールバック）。
  * 3. それでも0件なら先頭テンプレートを使う（防御的実装）。
  * 4. 候補の中からランダムに1件を選択する。
- * 5. テンプレートの `{petName}` をペット名で置換してイベント文を完成させる。
+ * 5. テンプレートの `{hostName}` をホスト名で、`{petName}` をペット名で
+ *    置換してイベント文を完成させる。
  *
  * @param {SpotDef} spot           - spots.json の1スポット分
  * @param {Pet}     pet            - ペットオブジェクト（name と personality を使用）
  * @param {Date}    [departedAt]   - 出発日時（省略時は現在時刻）
+ * @param {string}  [hostName]     - ホストペット名（M7 友達訪問用。省略時は空文字）
  * @returns {GeneratedEvent}
  * @throws {Error} spot.events が空配列の場合
  */
-export function generateEvent(spot, pet, departedAt = new Date()) {
+export function generateEvent(spot, pet, departedAt = new Date(), hostName = '') {
   const templates = spot.events;
 
   if (!templates || templates.length === 0) {
@@ -122,8 +124,10 @@ export function generateEvent(spot, pet, departedAt = new Date()) {
   // ステップ4: ランダム選択
   const selected = pool[Math.floor(Math.random() * pool.length)];
 
-  // ステップ5: {petName} の置換
-  const eventText = selected.text.replaceAll('{petName}', pet.name);
+  // ステップ5: {hostName} → {petName} の順に置換
+  const eventText = selected.text
+    .replaceAll('{hostName}', hostName)
+    .replaceAll('{petName}', pet.name);
 
   return {
     eventId:   selected.id,
