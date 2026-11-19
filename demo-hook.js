@@ -84,7 +84,11 @@ if (shot === 'footprint-issued') {
   seedPet('visiting');
   saveSyntheticSpot({
     id: 'friend-demo', displayName: 'ゆき のおうち', themeColor: '#b8d4e8', icon: '🏠',
-    events: [], hostPet: { name: 'ゆき', type: 'soraaru-penguin', personality: { curiosity: 2, sociability: 1 } },
+    events: [{
+      id: 'friend-001', souvenirId: null, conditions: null,
+      text: '{petName}が {hostName} のおうちに着くと、{hostName} がドアの前で待っていてくれた。\n「よく来たね」と言われて、{petName} はなんだか誇らしい気持ちになった。\nふたりはさっそく、お部屋のまんなかで遊びはじめた。',
+    }],
+    hostPet: { name: 'ゆき', type: 'soraaru-penguin', personality: { curiosity: 2, sociability: 1 } },
   });
   const v = { ...createVisit('friend-demo'), isFriendVisit: true };
   v.departedAt = PAST();
