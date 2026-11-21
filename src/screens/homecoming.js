@@ -5,7 +5,9 @@
  * 責務:
  *  - 帰宅した Visit のイベント文・おみやげ情報を画面に表示する
  *  - ペットのスプライト画像を表示する（帰宅状態）
- *  - 「絵日記をつくる」ボタン: generateCard で絵日記カードを生成してプレビュー表示する（TASK-19）
+ *  - 「絵日記をつくる」ボタン: AI日記（diary-ai）を試みてから generateCard で
+ *    絵日記カードを生成してプレビュー表示する（TASK-19 / #BuildHybridAI）
+ *    AI が使えない場合は従来のテンプレート文のままカードを作る
  *  - 「絵日記を保存」ボタン: プレビュー中のカードを PNG として保存する（TASK-19）
  *  - 「おうちへ」ボタン: Visit を履歴に追記してストアから削除し、ホーム画面へ遷移する
  *
@@ -13,9 +15,10 @@
  *           innerHTML への直接代入は行わない。
  */
 
-import { appendVisit, clearCurrentVisit } from '../store.js';
+import { appendVisit, clearCurrentVisit, loadPet } from '../store.js';
 import { goHome } from '../router.js';
 import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
+import { generateDiaryText, INFERENCE_SOURCE } from '../ai/diary-ai.js';
 import { encodeFootprintCode } from '../domain/odekake-code.js';
 import { clearSyntheticSpot } from '../domain/synthetic-spot.js';
 
@@ -313,9 +316,14 @@ function renderSouvenir(visit, spots) {
 /**
  * 「絵日記をつくる」ボタンが押されたときの処理（TASK-19 本実装）。
  * 設計書 3.3節どおり:
- *  1. generateCard(cardData, canvas, spot) を await で呼ぶ
- *  2. #card-preview-area を表示する
- *  3. #save-card-btn を有効化する
+ *  1. AI日記（diary-ai）で一人称の日記文の生成を試みる
+ *     - 生成中はボタンに待機表示を出す
+ *     - AI が使えた場合は画面の出来事文も日記文に差し替え、
+ *       カードには推論元バッジが付く
+ *     - AI が使えない場合は静かにテンプレート文のまま進む
+ *  2. generateCard(cardData, canvas, spot) を await で呼ぶ
+ *  3. #card-preview-area を表示する
+ *  4. #save-card-btn を有効化する
  */
 async function onMakeCard() {
   if (!currentVisit || !currentVisit.cardData) {
@@ -333,7 +341,10 @@ async function onMakeCard() {
   const spot = currentSpots.find(s => s.id === currentVisit.spotId)
     || { themeColor: '#6a3fa0' };
 
-  await generateCard(currentVisit.cardData, canvas, spot);
+  // AI日記の生成を試みる（失敗しても例外は来ない。テンプレ文が返る）
+  const cardData = await buildDiaryCardData(spot);
+
+  await generateCard(cardData, canvas, spot);
 
   const previewArea = document.getElementById('card-preview-area');
   if (previewArea) previewArea.hidden = false;
@@ -342,6 +353,61 @@ async function onMakeCard() {
   if (saveBtn) {
     saveBtn.disabled = false;
     saveBtn.setAttribute('aria-disabled', 'false');
+  }
+}
+
+/**
+ * AI日記つきの CardData を組み立てる。
+ *
+ * diary-ai に旅の事実を渡して日記文を生成させる。推論元がテンプレの
+ * ときは元の cardData をそのまま返す（バッジなし・従来動作と同一）。
+ * AI で書けたときは、画面の出来事文も日記文に差し替えてから、
+ * eventText と inferenceSource を差し替えたコピーを返す。
+ * 保存済みの Visit データ自体は書き換えない。
+ *
+ * @param {import('../domain/event-generator.js').SpotDef|{themeColor: string}} spot
+ * @returns {Promise<import('../domain/visit.js').CardData>}
+ */
+async function buildDiaryCardData(spot) {
+  const cardData = currentVisit.cardData;
+  const makeCardBtn = document.getElementById('make-card-btn');
+  const originalLabel = makeCardBtn ? makeCardBtn.textContent : '';
+
+  // 待機表示（AI生成には数秒かかることがある）
+  if (makeCardBtn) {
+    makeCardBtn.disabled = true;
+    makeCardBtn.textContent = 'AIが日記を書いているよ… ✍️';
+  }
+
+  try {
+    const pet = loadPet();
+    const souvenir = spot.souvenirs?.find(sv => sv.id === cardData.souvenirId);
+    const facts = {
+      petName:      cardData.petName,
+      personality:  pet ? pet.personality : null,
+      spotName:     spot.displayName || cardData.spotId,
+      eventText:    cardData.eventText,
+      souvenirName: souvenir ? souvenir.displayName : null,
+    };
+
+    const diary = await generateDiaryText(facts, cardData.eventText);
+    if (diary.source === INFERENCE_SOURCE.TEMPLATE) {
+      // AI が使えなかった → テンプレ文のまま（従来動作）
+      return cardData;
+    }
+
+    // AI で書けた → 画面の出来事文も日記文に差し替える
+    const eventTextEl = document.getElementById('homecoming-event-text');
+    if (eventTextEl) {
+      renderMultilineText(eventTextEl, diary.text);
+    }
+
+    return { ...cardData, eventText: diary.text, inferenceSource: diary.source };
+  } finally {
+    if (makeCardBtn) {
+      makeCardBtn.disabled = false;
+      makeCardBtn.textContent = originalLabel;
+    }
   }
 }
 

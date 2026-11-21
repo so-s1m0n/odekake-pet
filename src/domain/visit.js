@@ -48,6 +48,8 @@ export const VISIT_STATUS = {
  * @property {string}      eventText  - 生成済みイベント文
  * @property {string|null} souvenirId - おみやげID（null可）
  * @property {string}      returnedAt - 帰宅日時（ISO 8601）
+ * @property {string}      [inferenceSource] - 日記文の推論元（'on_device' | 'cloud' | 'template'。
+ *   AI日記で生成したカードにだけ付く。無い場合はバッジを描かない）
  */
 
 // ─────────────────────────────────────────────

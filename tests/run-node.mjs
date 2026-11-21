@@ -54,6 +54,7 @@ await import('./event-generator.test.js');
 await import('./card-generator.test.js');
 await import('./visit-property.test.js');
 await import('./odekake-code.test.js');
+await import('./diary-ai.test.js');
 
 console.log(`== ${pass} pass / ${fail} fail ==`);
 process.exit(fail ? 1 : 0);

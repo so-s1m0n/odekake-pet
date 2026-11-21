@@ -5,6 +5,8 @@
  * localStorage・router などの副作用には依存しない。
  */
 
+import { badgeLabelFor } from '../ai/diary-ai.js';
+
 // ─────────────────────────────────────────────
 // 定数
 // ─────────────────────────────────────────────
@@ -39,6 +41,13 @@ export const CARD_LAYOUT = {
   LOGO_H:   80,
   LOGO_X:  840,
   LOGO_Y: 1820,
+
+  // 推論元バッジ（右上ピル型。AI日記のときだけ描く）
+  BADGE_MARGIN:    40,
+  BADGE_Y:         44,
+  BADGE_HEIGHT:    68,
+  BADGE_FONT_SIZE: 36,
+  BADGE_PADDING_X: 30,
 };
 
 /** イベント文の最大文字数 */
@@ -220,6 +229,46 @@ export async function generateCard(cardData, canvas, spot) {
   if (logo !== null) {
     ctx.drawImage(logo, CARD_LAYOUT.LOGO_X, CARD_LAYOUT.LOGO_Y, CARD_LAYOUT.LOGO_W, CARD_LAYOUT.LOGO_H);
   }
+
+  // 6. 推論元バッジ（右上。cardData.inferenceSource があるときだけ描く。
+  //    AI未設定・旧データでは存在しないため、従来の見た目のままになる）
+  const badgeLabel = badgeLabelFor(cardData.inferenceSource);
+  if (badgeLabel !== null) {
+    drawInferenceBadge(ctx, badgeLabel);
+  }
+}
+
+/**
+ * 推論元バッジを右上にピル型で描画する。
+ * 背景写真の上でも読めるよう、半透明の黒地に白文字で描く。
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} label - バッジ表示文（badgeLabelFor の戻り値）
+ */
+function drawInferenceBadge(ctx, label) {
+  const { WIDTH, BADGE_MARGIN, BADGE_Y, BADGE_HEIGHT, BADGE_FONT_SIZE, BADGE_PADDING_X } = CARD_LAYOUT;
+
+  ctx.font = BADGE_FONT_SIZE + 'px sans-serif';
+  const textWidth = ctx.measureText(label).width;
+  const badgeWidth = textWidth + BADGE_PADDING_X * 2;
+  const badgeX = WIDTH - BADGE_MARGIN - badgeWidth;
+
+  // ピル型の地
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(badgeX, BADGE_Y, badgeWidth, BADGE_HEIGHT, BADGE_HEIGHT / 2);
+  } else {
+    ctx.rect(badgeX, BADGE_Y, badgeWidth, BADGE_HEIGHT);
+  }
+  ctx.fill();
+
+  // ラベル（中央揃え・縦中央）
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, badgeX + badgeWidth / 2, BADGE_Y + BADGE_HEIGHT / 2);
+  ctx.textBaseline = 'alphabetic';
 }
 
 /**
