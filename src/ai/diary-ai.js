@@ -15,9 +15,14 @@
 * テンプレート文（cardData.eventText）をそのまま使う。
 * アプリは AI の状態によらず決して壊れない。
 *
-* Firebase の実接続は後工程。FIREBASE_CONFIG がプレースホルダの間は
-* isFirebaseConfigured() が false になり、SDK を読み込まず即テンプレに
-* 落ちるため、Kiroween 提出済みの公開版とまったく同じ動作になる。
+* Firebase 実接続は 2026-11-24 に完了（プロジェクト odekake-pet）。
+* FIREBASE_CONFIG が未設定（空）の間は isFirebaseConfigured() が false に
+* なり、SDK を読み込まず即テンプレに落ちる。設定済みの今も、生成失敗・
+* タイムアウト時はテンプレへ落ちるため、アプリの挙動は壊れない。
+*
+* App Check はデバッグプロバイダで運用する（#BuildHybridAI の審査環境
+* 向け。公式ルールでデバッグトークン可）。詳細は APPCHECK_DEBUG_TOKEN
+* のコメントと devlog（2026-11-24）を参照。
 *
 * テスト方針: ネットワーク依存の本体（generateDiaryText の実呼び出し）は
 * 対象外とし、プロンプト組み立て・整形・フォールバック判定などの
@@ -25,22 +30,58 @@
 */
 
 // ─────────────────────────────────────────────
-// Firebase 設定（プレースホルダ）
+// Firebase 設定（2026-11-24 に実値を記入）
 // ─────────────────────────────────────────────
 
 /**
 * Firebase Web アプリの設定値。
-* 後工程で Firebase コンソールから取得した値に差し替える。
+* 2026-11-24 に Firebase コンソール（プロジェクト odekake-pet）から
+* 取得した firebaseConfig を記入した。
 * firebaseConfig は公開情報（API キーはアクセス制御ではなく識別子）。
 * 保護は App Check と API 制限で行う前提。
 * 空文字の項目が1つでもあれば「未設定」として扱う。
 */
 export const FIREBASE_CONFIG = {
-apiKey: '',
-authDomain: '',
-projectId: '',
-appId: '',
+apiKey: 'AIzaSyDhknhmHcO20azIhvkrBpBuw4cyrAKXjrw',
+authDomain: 'odekake-pet.firebaseapp.com',
+projectId: 'odekake-pet',
+storageBucket: 'odekake-pet.firebasestorage.app',
+messagingSenderId: '344677363426',
+appId: '1:344677363426:web:0112b4c95fbbfae17ab8bb',
 };
+
+/**
+* App Check のデバッグトークン（#BuildHybridAI 審査環境向け）。
+*
+* 方式の判断（2026-11-24、devlog にも記録）:
+* 公式ドキュメントの方式を採用した。initializeAppCheck の初回呼び出し
+* より前に self.FIREBASE_APPCHECK_DEBUG_TOKEN へトークン文字列を設定
+* すると、SDK がデバッグモードに入り、検証プロバイダを経由せず
+* デバッグトークンを App Check トークンへ交換する（ピン留めした
+* v12.5.0 の firebase-app-check.js の実装で分岐を確認済み）。
+* v12.5.0 に DebugProvider の export はないため、initializeAppCheck の
+* provider 引数には CustomProvider（getToken は常に reject）を渡す。
+* デバッグモードでは provider は呼ばれない。万一デバッグモードが
+* 無効な環境では生成が失敗し、既存の3段フォールバックでテンプレに
+* 落ちる。本番プロバイダ（reCAPTCHA）のキーは存在しないので入れない。
+*
+* このトークンは Firebase コンソール側で登録して初めて有効になる。
+* 公開リポジトリに含まれる前提の運用（審査員が公開URLから実行する
+* ため）で、漏洩時はコンソールの Manage debug tokens で即削除する。
+*/
+export const APPCHECK_DEBUG_TOKEN = '7514157f-277f-495f-b6cc-eee45a454c4b';
+
+/**
+* App Check のデバッグトークンをグローバルへ設定する。
+* SDK の読み込み・初期化より前に呼ぶこと（初期化時に読まれる）。
+*
+* @param {object} [target] - 設定先（既定は globalThis。ブラウザでは self と同一）
+* @returns {string} 設定したトークン
+*/
+export function installAppCheckDebugToken(target = globalThis) {
+target.FIREBASE_APPCHECK_DEBUG_TOKEN = APPCHECK_DEBUG_TOKEN;
+return target.FIREBASE_APPCHECK_DEBUG_TOKEN;
+}
 
 /** 読み込む Firebase JS SDK のバージョン（inferenceSource は v12.5.0 以降） */
 const FIREBASE_SDK_VERSION = '12.5.0';
@@ -230,6 +271,31 @@ return null;
 let cachedModel = null;
 
 /**
+* App Check をデバッグプロバイダで初期化する（ベストエフォート）。
+* デバッグトークンのグローバル設定 → firebase-app-check.js の読み込み
+* → initializeAppCheck の順。初期化に失敗しても例外は投げない
+* （AI 生成自体は継続し、失敗時はテンプレへ落ちる）。
+*
+* @param {object} app - initializeApp の戻り値
+*/
+async function initAppCheck(app) {
+try {
+installAppCheckDebugToken();
+const appCheckModule = await import(`${FIREBASE_CDN_BASE}/firebase-app-check.js`);
+appCheckModule.initializeAppCheck(app, {
+provider: new appCheckModule.CustomProvider({
+getToken: () => Promise.reject(
+new Error('本番用 App Check プロバイダ（reCAPTCHA）は未設定です'),
+),
+}),
+isTokenAutoRefreshEnabled: true,
+});
+} catch (e) {
+console.warn('[diary-ai] App Check の初期化に失敗しました（生成は継続します）:', e);
+}
+}
+
+/**
 * Firebase AI Logic のモデルを初期化して返す。
 * SDK は CDN の ES モジュールを動的 import する（ビルドなし方針を維持）。
 * getGenerativeModel はユーザー操作（ボタンクリック）の流れで呼ぶこと
@@ -244,6 +310,7 @@ const appModule = await import(`${FIREBASE_CDN_BASE}/firebase-app.js`);
 const aiModule = await import(`${FIREBASE_CDN_BASE}/firebase-ai.js`);
 
 const app = appModule.initializeApp(FIREBASE_CONFIG);
+await initAppCheck(app);
 const ai = aiModule.getAI(app, { backend: new aiModule.GoogleAIBackend()});
 
 cachedModel = aiModule.getGenerativeModel(ai, {

@@ -6,6 +6,9 @@
  */
 
 import {
+  FIREBASE_CONFIG,
+  APPCHECK_DEBUG_TOKEN,
+  installAppCheckDebugToken,
   INFERENCE_SOURCE,
   badgeLabelFor,
   isFirebaseConfigured,
@@ -49,9 +52,44 @@ describe('isFirebaseConfigured', () => {
     );
   });
 
-  it('null や未定義でも例外にならず false', () => {
+  it('null でも例外にならず false', () => {
     assert.equal(isFirebaseConfigured(null), false, 'null は未設定');
-    assert.equal(isFirebaseConfigured(), false, '既定値（プレースホルダ）は未設定');
+  });
+
+  it('実設定（FIREBASE_CONFIG）は設定済みと判定される', () => {
+    // 2026-11-24 に Firebase コンソールの実値を記入した
+    assert.equal(isFirebaseConfigured(), true, '既定値（実設定）は設定済み');
+    assert.equal(FIREBASE_CONFIG.projectId, 'odekake-pet', 'プロジェクトは odekake-pet');
+  });
+});
+
+// ─── App Check（デバッグプロバイダ） ─────────────────────────────────────────
+
+describe('App Check デバッグトークン', () => {
+  it('デバッグトークンは UUID 形式の文字列', () => {
+    assert.equal(typeof APPCHECK_DEBUG_TOKEN, 'string', '文字列である');
+    assert.ok(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(APPCHECK_DEBUG_TOKEN),
+      'UUID 形式である'
+    );
+  });
+
+  it('installAppCheckDebugToken は対象へトークンを設定して返す', () => {
+    const target = {};
+    const returned = installAppCheckDebugToken(target);
+    assert.equal(target.FIREBASE_APPCHECK_DEBUG_TOKEN, APPCHECK_DEBUG_TOKEN, 'グローバル名で設定される');
+    assert.equal(returned, APPCHECK_DEBUG_TOKEN, '設定したトークンが返る');
+  });
+
+  it('既定では globalThis へ設定される', () => {
+    const previous = globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN;
+    try {
+      installAppCheckDebugToken();
+      assert.equal(globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN, APPCHECK_DEBUG_TOKEN, 'globalThis に設定される');
+    } finally {
+      if (previous === undefined) delete globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN;
+      else globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = previous;
+    }
   });
 });
 
