@@ -18,12 +18,13 @@
 import { appendVisit, clearCurrentVisit, loadPet } from '../store.js';
 import { goHome } from '../router.js';
 import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
-import {
-  generateDiaryText,
-  INFERENCE_SOURCE,
-  getLastAiError,
-  clearAiError,
-} from '../ai/diary-ai.js';
+import { generateDiaryText, INFERENCE_SOURCE } from '../ai/diary-ai.js';
+// 診断専用の追加エクスポート（getLastAiError / clearAiError）は名前空間経由で
+// 任意アクセスする。名前付き import で静的に束縛すると、デプロイ直後に
+// CDN 側で新旧ファイルが混在した瞬間、旧 diary-ai.js に無いエクスポートを
+// 参照してモジュール全体のリンクが失敗し、アプリが起動しなくなる
+// （2026-11-26 の真っ白障害の再発防止。詳細は devlog）。
+import * as diaryAi from '../ai/diary-ai.js';
 import { encodeFootprintCode } from '../domain/odekake-code.js';
 import { clearSyntheticSpot } from '../domain/synthetic-spot.js';
 
@@ -60,7 +61,7 @@ export function initHomecomingScreen(visit, spots) {
   renderEventResult(visit, spots);
 
   // 前の Visit の失敗理由が残らないよう、AI日記の診断表示を初期化する
-  clearAiError();
+  safeClearAiError();
   renderAiDiagnostics();
 
   // 前の Visit のカードが残らないよう、プレビューを隠して保存ボタンを無効化する
@@ -433,10 +434,31 @@ async function buildDiaryCardData(spot) {
  * #ai-diagnostics 要素、homecoming.css の .ai-diagnostics の3か所だけ。
  * 外すときはこの関数と呼び出し2か所（init / buildDiaryCardData）も消す。
  */
+/**
+ * 診断用の失敗理由を安全に取得する（診断側の都合で画面を壊さない）。
+ * diary-ai.js 側に該当エクスポートが無い混在状態でも例外にしない。
+ */
+function safeGetLastAiError() {
+  try {
+    return diaryAi.getLastAiError?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** 診断用の失敗理由を安全に消す（同上） */
+function safeClearAiError() {
+  try {
+    diaryAi.clearAiError?.();
+  } catch {
+    // 診断は任意機能のため、失敗しても無視する
+  }
+}
+
 function renderAiDiagnostics() {
   const el = document.getElementById('ai-diagnostics');
   if (!el) return;
-  const error = getLastAiError();
+  const error = safeGetLastAiError();
   if (!error) {
     el.hidden = true;
     el.textContent = '';
