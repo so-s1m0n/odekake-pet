@@ -30,27 +30,35 @@
       output.appendChild(p);
     }
 
+    // 非同期テスト（async な it）も扱えるよう、実行は Promise チェーンで
+    // 直列化する。describe / it は登録順にキューへ積み、最後に await する。
+    let chain = Promise.resolve();
+
     window.describe = function(suiteName, fn) {
-      const h = document.createElement('p');
-      h.className = 'suite';
-      h.textContent = `▶ ${suiteName}`;
-      output.appendChild(h);
-      fn();
+      chain = chain.then(() => {
+        const h = document.createElement('p');
+        h.className = 'suite';
+        h.textContent = `▶ ${suiteName}`;
+        output.appendChild(h);
+        fn();
+      });
     };
 
     window.it = function(testName, fn) {
-      try {
-        fn();
-        results.pass++;
-        log(`<span class="pass">  ✓ ${testName}</span>`);
-      } catch (e) {
-        results.fail++;
-        log(`<span class="fail">  ✗ ${testName}</span>`);
-        const pre = document.createElement('pre');
-        pre.className = 'error';
-        pre.textContent = e instanceof Error ? e.message : String(e);
-        output.appendChild(pre);
-      }
+      chain = chain.then(async () => {
+        try {
+          await fn();
+          results.pass++;
+          log(`<span class="pass">  ✓ ${testName}</span>`);
+        } catch (e) {
+          results.fail++;
+          log(`<span class="fail">  ✗ ${testName}</span>`);
+          const pre = document.createElement('pre');
+          pre.className = 'error';
+          pre.textContent = e instanceof Error ? e.message : String(e);
+          output.appendChild(pre);
+        }
+      });
     };
 
     window.assert = {
@@ -99,6 +107,14 @@
     await import('./visit-property.test.js');
 await import('./odekake-code.test.js');
     await import('./diary-ai.test.js');
+
+    // describe の実行中に it がチェーンへ追加されるため、スナップショットを
+    // 1回 await するだけでは取りこぼす。チェーンが伸びなくなるまで待つ。
+    let previousChain;
+    do {
+      previousChain = chain;
+      await previousChain;
+    } while (chain !== previousChain);
 
     // ─── サマリ ──────────────────────────────────────────────────────────
     const total  = results.pass + results.fail;

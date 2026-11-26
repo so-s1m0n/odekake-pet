@@ -8,20 +8,28 @@
 let pass = 0;
 let fail = 0;
 
+// 非同期テスト（async な it）も扱えるよう、実行は Promise チェーンで
+// 直列化する。describe / it は登録順にキューへ積み、最後に await する。
+let chain = Promise.resolve();
+
 globalThis.describe = (name, fn) => {
-  console.log(`▶ ${name}`);
-  fn();
+  chain = chain.then(() => {
+    console.log(`▶ ${name}`);
+    fn();
+  });
 };
 
 globalThis.it = (name, fn) => {
-  try {
-    fn();
-    pass++;
-    console.log(`  ✓ ${name}`);
-  } catch (e) {
-    fail++;
-    console.log(`  ✗ ${name}\n    ${e instanceof Error ? e.message : String(e)}`);
-  }
+  chain = chain.then(async () => {
+    try {
+      await fn();
+      pass++;
+      console.log(`  ✓ ${name}`);
+    } catch (e) {
+      fail++;
+      console.log(`  ✗ ${name}\n    ${e instanceof Error ? e.message : String(e)}`);
+    }
+  });
 };
 
 globalThis.assert = {
@@ -55,6 +63,14 @@ await import('./card-generator.test.js');
 await import('./visit-property.test.js');
 await import('./odekake-code.test.js');
 await import('./diary-ai.test.js');
+
+// describe の実行中に it がチェーンへ追加されるため、スナップショットを
+// 1回 await するだけでは取りこぼす。チェーンが伸びなくなるまで待つ。
+let previousChain;
+do {
+  previousChain = chain;
+  await previousChain;
+} while (chain !== previousChain);
 
 console.log(`== ${pass} pass / ${fail} fail ==`);
 process.exit(fail ? 1 : 0);

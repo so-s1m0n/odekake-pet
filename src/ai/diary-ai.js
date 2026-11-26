@@ -39,6 +39,12 @@
 * window.__odekakeLastAiError の両方から読めるようにした。帰宅画面は
 * これを小さく表示する（表示側は homecoming.js の renderAiDiagnostics
 * の1か所のみ。コンテスト提出前に表示ごと外す想定）。
+*
+* 再試行（2026-11-26）: モデル到達まで通ったあと、残る失敗はモデル側の
+* 一時的な高負荷（500 "high demand"）だったため、クラウド生成の試行
+* 単位に一時エラーだけの再試行を入れた（attemptWithRetry /
+* isTransientAiError を参照）。404・権限系などの恒常エラーは
+* 再試行しない。
 */
 
 // ─────────────────────────────────────────────
@@ -128,6 +134,16 @@ const CLOUD_MODEL_NAME = 'gemini-3.8-flash';
 
 /** 生成のタイムアウト（ミリ秒）。超えたらテンプレへ落ちる */
 const GENERATION_TIMEOUT_MS = 20_000;
+
+/**
+* 一時エラー再試行の待ち時間（ミリ秒）。
+* 初回失敗のあと2秒、2回目の失敗のあと5秒待って再試行する。
+* 試行は初回＋再試行2回＝最大3回（MAX_GENERATION_ATTEMPTS）。
+*/
+export const RETRY_DELAYS_MS = [2000, 5000];
+
+/** 生成の最大試行回数（初回を含む） */
+export const MAX_GENERATION_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 
 // ─────────────────────────────────────────────
 // 推論元の定義
@@ -331,6 +347,92 @@ at: new Date().toISOString(),
 };
 }
 
+/**
+* エラーが「一時的で再試行する価値がある」ものかを判定する。
+*
+* 対象は次のものだけ:
+* - HTTP 500 / 503（status プロパティ、または Firebase の fetch-error の
+*   ように message 本文へ "[500]" の形で埋まっているもの）
+* - メッセージに high demand / try again later / overloaded を含むもの
+*   （モデル側の一時的な高負荷。2026-11-26 の実機エラーがこの形）
+* - ネットワーク系の fetch 失敗（HTTP ステータスを持たないもの）
+*
+* 404（モデル不存在）・403（権限系）などの恒常エラーは false。
+* 本文に HTTP ステータスが明記されている場合はそちらを優先し、
+* 4xx/5xx（500・503 を除く）は文言に関わらず再試行しない。
+* エラーでない値・文字列などでも例外にしない。
+*
+* @param {*} error - 捕まえた値
+* @returns {boolean}
+*/
+export function isTransientAiError(error) {
+if (!error || typeof error!== 'object') return false;
+const message = typeof error.message === 'string'? error.message: '';
+
+// 明示的な HTTP ステータス（プロパティ）があれば最優先で見る
+const rawStatus = error.status?? error.statusCode;
+const status = typeof rawStatus === 'string' && /^\d+$/.test(rawStatus)
+? Number(rawStatus)
+: rawStatus;
+if (status === 500 || status === 503) return true;
+if (typeof status === 'number' && status >= 400) return false;
+
+// Firebase の fetch-error は HTTP ステータスが本文の "[500]" に入る
+const bracket = message.match(/\[(\d{3})\]/);
+if (bracket) {
+const code = Number(bracket[1]);
+if (code === 500 || code === 503) return true;
+if (code >= 400) return false;
+}
+
+// モデル側の一時的な高負荷を表す文言
+if (/high demand/i.test(message)) return true;
+if (/try again later/i.test(message)) return true;
+if (/overloaded/i.test(message)) return true;
+
+// ネットワーク系の fetch 失敗（HTTP ステータスが無いもの）
+if (error.name === 'TypeError' && /fetch|network/i.test(message)) return true;
+if (/failed to fetch|network\s?error/i.test(message)) return true;
+return false;
+}
+
+/** 再試行の待ち時間の実体（テストでは差し替え可能にする） */
+const defaultSleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+* 一時エラーだけ再試行しながら処理を実行する。
+* 再試行の上限は delays の長さ（既定では初回＋2回＝最大3回）。
+* 恒常エラーは即座に投げ直し、上限を超えたら最後のエラーを投げる。
+*
+* @template T
+* @param {(attempt: number) => Promise<T>} attemptFn - 試行本体（引数は0始まりの試行番号）
+* @param {object} [options]
+* @param {number[]} [options.delays] - 再試行ごとの待ち時間（ミリ秒）
+* @param {(ms: number) => Promise<void>} [options.sleep] - 待ち時間の実装（テスト用）
+* @param {(error: *) => boolean} [options.shouldRetry] - 再試行可否の判定（テスト用）
+* @returns {Promise<T>}
+*/
+export async function attemptWithRetry(attemptFn, options = {}) {
+const delays = options.delays?? RETRY_DELAYS_MS;
+const sleep = options.sleep?? defaultSleep;
+const shouldRetry = options.shouldRetry?? isTransientAiError;
+let lastError = null;
+for (let attempt = 0; attempt <= delays.length; attempt++) {
+try {
+return await attemptFn(attempt);
+} catch (e) {
+lastError = e;
+if (attempt >= delays.length || !shouldRetry(e)) throw e;
+console.warn(
+`[diary-ai] 一時的なエラーのため再試行します（${attempt + 2}/${delays.length + 1}回目）:`,
+e,
+);
+await sleep(delays[attempt]);
+}
+}
+throw lastError;
+}
+
 // ─────────────────────────────────────────────
 // 失敗理由の保持（診断用）
 // ─────────────────────────────────────────────
@@ -488,6 +590,11 @@ const model = await loadFirebaseModel();
 // 公式ハイブリッド手順 Step 6: 生成の前にデバイスモデルを初期化する
 // （1回だけ・失敗しても生成は継続する）
 await ensureDeviceModelInitialized(model);
+// 再試行は生成の試行単位で入れる。各試行の中では従来どおり
+// prefer_on_device のハイブリッド（オンデバイス→クラウド）が走るため、
+// 試行順の意味は壊れない。一時エラー（モデル高負荷など）だけを
+// 最大3回まで再試行し、恒常エラーは即テンプレへ落ちる
+return attemptWithRetry(async () => {
 const timeout = new Promise((_, reject) => {
 setTimeout(() => reject(new Error('AI生成がタイムアウトしました')), GENERATION_TIMEOUT_MS);
 });
@@ -496,6 +603,7 @@ return {
 text: result.response.text(),
 inferenceSource: result.response.inferenceSource,
 };
+});
 }
 
 /**

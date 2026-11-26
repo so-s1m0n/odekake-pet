@@ -22,6 +22,10 @@ import {
   recordAiError,
   getLastAiError,
   clearAiError,
+  isTransientAiError,
+  attemptWithRetry,
+  RETRY_DELAYS_MS,
+  MAX_GENERATION_ATTEMPTS,
   MAX_DIARY_LENGTH,
 } from '../src/ai/diary-ai.js';
 
@@ -392,5 +396,194 @@ describe('AI 失敗理由の保持', () => {
     clearAiError();
     assert.equal(getLastAiError(), null, '保持が消える');
     assert.equal(globalThis.__odekakeLastAiError, null, 'グローバルも消える');
+  });
+});
+
+// ─── isTransientAiError（一時エラーの判定） ──────────────────────────────────
+
+describe('isTransientAiError', () => {
+  // 2026-11-26 20:45〜20:48 に実機の診断表示で読めた全文と同形
+  const highDemandError = {
+    name: 'FirebaseError',
+    code: 'fetch-error',
+    message: 'AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/odekake-pet/models/gemini-3.8-flash:generateContent: [500] This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
+  };
+  // 2026-11-26 20:32 に実機で読めたモデル提供終了の 404 と同形
+  const modelGoneError = {
+    name: 'FirebaseError',
+    code: 'fetch-error',
+    message: 'AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/odekake-pet/models/gemini-2.0-flash-lite:generateContent: [404] This model models/gemini-2.0-flash-lite is no longer available.',
+  };
+
+  it('実機の高負荷エラー（[500] + high demand）は一時的', () => {
+    assert.equal(isTransientAiError(highDemandError), true, '500 high demand は再試行対象');
+  });
+
+  it('status プロパティの 500 / 503 は一時的（文字列でも）', () => {
+    assert.equal(isTransientAiError({ status: 500 }), true, '数値 500');
+    assert.equal(isTransientAiError({ status: 503 }), true, '数値 503');
+    assert.equal(isTransientAiError({ status: '503' }), true, '文字列 503');
+    assert.equal(isTransientAiError({ statusCode: 500 }), true, 'statusCode でも拾う');
+  });
+
+  it('本文の [503] だけでも一時的', () => {
+    assert.equal(
+      isTransientAiError({ message: 'AI: Error fetching from https://example.com: [503] Service Unavailable' }),
+      true,
+      '[503] は再試行対象'
+    );
+  });
+
+  it('high demand / try again later の文言だけでも一時的', () => {
+    assert.equal(isTransientAiError(new Error('This model is currently experiencing high demand')), true, 'high demand');
+    assert.equal(isTransientAiError(new Error('Please try again later.')), true, 'try again later');
+    assert.equal(isTransientAiError(new Error('The model is overloaded')), true, 'overloaded');
+  });
+
+  it('ネットワーク系の fetch 失敗は一時的', () => {
+    assert.equal(isTransientAiError(new TypeError('Failed to fetch')), true, 'TypeError の fetch 失敗');
+    assert.equal(isTransientAiError(new Error('NetworkError when attempting to fetch resource')), true, 'NetworkError');
+  });
+
+  it('実機の 404（モデル提供終了）は恒常的で再試行しない', () => {
+    assert.equal(isTransientAiError(modelGoneError), false, '404 は fetch-error でも再試行しない');
+  });
+
+  it('権限系・その他の 4xx は再試行しない', () => {
+    assert.equal(isTransientAiError({ status: 403, message: 'permission denied' }), false, '403');
+    assert.equal(isTransientAiError({ message: '[400] Invalid argument' }), false, '[400]');
+    assert.equal(isTransientAiError({ name: 'FirebaseError', code: 'ai/permission-denied', message: 'denied' }), false, '権限コード');
+  });
+
+  it('本文に 4xx があれば try again later の文言があっても再試行しない', () => {
+    assert.equal(
+      isTransientAiError({ message: '[404] Not found. Please try again later.' }),
+      false,
+      'HTTP ステータスの明記が文言より優先される'
+    );
+  });
+
+  it('タイムアウトや無関係なエラーは再試行しない', () => {
+    assert.equal(isTransientAiError(new Error('AI生成がタイムアウトしました')), false, 'タイムアウトは対象外');
+    assert.equal(isTransientAiError(new Error('なにか別の失敗')), false, '無関係なエラー');
+  });
+
+  it('エラーでない値でも例外にならず false', () => {
+    assert.equal(isTransientAiError(null), false, 'null');
+    assert.equal(isTransientAiError(undefined), false, 'undefined');
+    assert.equal(isTransientAiError('high demand'), false, '文字列そのものは対象外');
+    assert.equal(isTransientAiError(500), false, '数値そのものは対象外');
+  });
+});
+
+// ─── attemptWithRetry（一時エラーの再試行） ──────────────────────────────────
+
+describe('attemptWithRetry', () => {
+  const noSleep = () => Promise.resolve();
+  const recordingSleep = record => ms => {
+    record.push(ms);
+    return Promise.resolve();
+  };
+  const transient = () => {
+    const e = new Error('This model is currently experiencing high demand. Please try again later.');
+    e.status = 500;
+    return e;
+  };
+
+  it('既定の再試行間隔は2秒・5秒で、最大試行は3回', () => {
+    assert.deepEqual(RETRY_DELAYS_MS, [2000, 5000], '間隔は [2000, 5000]');
+    assert.equal(MAX_GENERATION_ATTEMPTS, 3, '初回＋再試行2回＝3回');
+  });
+
+  it('初回で成功すれば再試行も待機もしない', async () => {
+    let calls = 0;
+    const sleeps = [];
+    const result = await attemptWithRetry(
+      async () => {
+        calls++;
+        return 'ok';
+      },
+      { delays: [10, 20], sleep: recordingSleep(sleeps) },
+    );
+    assert.equal(result, 'ok', '結果が返る');
+    assert.equal(calls, 1, '試行は1回だけ');
+    assert.deepEqual(sleeps, [], '待機しない');
+  });
+
+  it('一時エラーが続いても上限内で成功すれば結果を返す', async () => {
+    let calls = 0;
+    const sleeps = [];
+    const result = await attemptWithRetry(
+      async () => {
+        calls++;
+        if (calls < 3) throw transient();
+        return 'recovered';
+      },
+      { delays: [10, 20], sleep: recordingSleep(sleeps) },
+    );
+    assert.equal(result, 'recovered', '3回目の結果が返る');
+    assert.equal(calls, 3, '試行は3回');
+    assert.deepEqual(sleeps, [10, 20], '間隔どおり待機する');
+  });
+
+  it('一時エラーが上限まで続いたら最後のエラーを投げる', async () => {
+    let calls = 0;
+    const sleeps = [];
+    let thrown = null;
+    try {
+      await attemptWithRetry(
+        async () => {
+          calls++;
+          throw transient();
+        },
+        { delays: [10, 20], sleep: recordingSleep(sleeps) },
+      );
+    } catch (e) {
+      thrown = e;
+    }
+    assert.equal(calls, 3, '試行は最大3回で止まる');
+    assert.deepEqual(sleeps, [10, 20], '再試行は2回だけ待機する');
+    assert.ok(thrown, 'エラーが投げられる');
+    assert.equal(thrown.status, 500, '最後の一時エラーが投げられる');
+  });
+
+  it('恒常エラーは再試行せず即座に投げる', async () => {
+    let calls = 0;
+    const sleeps = [];
+    const permanent = new Error('[404] This model is no longer available.');
+    let thrown = null;
+    try {
+      await attemptWithRetry(
+        async () => {
+          calls++;
+          throw permanent;
+        },
+        { delays: [10, 20], sleep: recordingSleep(sleeps) },
+      );
+    } catch (e) {
+      thrown = e;
+    }
+    assert.equal(calls, 1, '試行は1回だけ');
+    assert.deepEqual(sleeps, [], '待機しない');
+    assert.equal(thrown, permanent, '元のエラーがそのまま投げられる');
+  });
+
+  it('一時エラーのあと恒常エラーが出たらそこで止める', async () => {
+    let calls = 0;
+    const permanent = { status: 403, message: 'permission denied' };
+    let thrown = null;
+    try {
+      await attemptWithRetry(
+        async () => {
+          calls++;
+          throw calls === 1 ? transient() : permanent;
+        },
+        { delays: [10, 20], sleep: noSleep },
+      );
+    } catch (e) {
+      thrown = e;
+    }
+    assert.equal(calls, 2, '恒常エラーが出た時点で止まる');
+    assert.equal(thrown, permanent, '恒常エラーが投げられる');
   });
 });
