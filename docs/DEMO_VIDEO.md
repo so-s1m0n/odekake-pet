@@ -10,7 +10,7 @@
   - `index.html` の main.js の直前に `<script type="module" src="demo-hook.js"></script>` を一時的に差し込む（撮影後に外す）。
   - フックは `?shot=<name>` を読み、localStorage に種データを入れ、ブート後に実ボタンをクリックして各画面を作る。
   - ショット一覧: setup / home（足跡通知つき）/ odekake / waiting / homecoming / card（カード生成後）/ album / code-modal / friend-preview（検証成功表示）/ footprints / footprint-issued（足跡コードモーダル）。
-  - 種データ: ペット「もち」（まめしば、なかよし度42）、星屑工房の完了訪問＋おみやげ、足跡2件（ゆき🐧・はな🐰）。
+  - 種データ: ペット「もち」（まめしば、なかよし度42）、月夜の小屋の完了訪問＋おみやげ、足跡2件（ゆき🐧・はな🐰）。
 
 ## 台本（ナレーションと画面）
 
@@ -45,7 +45,7 @@ import { saveSyntheticSpot } from './src/domain/synthetic-spot.js';
 const shot = new URLSearchParams(location.search).get('shot') || 'setup';
 
 const WEIGHTS = { curiosity: [1, 3, 6], sociability: [1, 3, 6] };
-const EVENT_TEXT = 'もちは工房の棚の隙間に、ちいさな星のかけらをみつけた。\nきらきらと光るそれを、そっと手に取るとあたたかかった。\nルミが「それはきみにあげる」とにっこりした。';
+const EVENT_TEXT = 'もちは小屋の棚の隙間に、ちいさな星のかけらをみつけた。\nきらきらと光るそれを、そっと手に取るとあたたかかった。\nルミが「それはきみにあげる」とにっこりした。';
 
 function seedPet(state = 'home') {
   let pet = createPet('mameshiba', 'もち', WEIGHTS);
@@ -74,7 +74,7 @@ function seedFootprints() {
   appendFootprint({
     id: 'footprint-2', visitorPetName: 'はな', visitorPetType: 'hoshikuzu-usagi',
     visitedAt: '2026-11-14T10:00:00+09:00',
-    eventSummary: 'はなちゃんが工房のランプ作りを手伝ってくれた。',
+    eventSummary: 'はなちゃんが小屋のランプ作りを手伝ってくれた。',
     recordedAt: '2026-11-14T19:00:00+09:00',
   });
 }

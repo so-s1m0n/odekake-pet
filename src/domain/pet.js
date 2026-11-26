@@ -112,6 +112,8 @@ export function createPet(type, name, personalityWeights) {
     type,
     name:        trimmedName,
     personality,
+    // 冒険で貯まる経験値。実効性格の形成に使う（domain/memory.js）
+    experience:  { curiosityXp: 0, sociabilityXp: 0 },
     affinity:    0,
     state:       PET_STATE.HOME,
     createdAt:   new Date().toISOString(),

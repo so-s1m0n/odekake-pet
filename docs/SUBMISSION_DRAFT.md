@@ -13,7 +13,7 @@
 
 ### Summary (for Judges)
 
-Odekake Pet revives the 2000s blog pet as a serverless web app. Your pet takes real-time trips while you're away and returns with a picture-diary card you can post anywhere. Pets visit each other through short text codes — no server, no accounts. Built spec-first with Kiro: every feature lives in `.kiro/specs/` as requirements → design → tasks, guarded by agent hooks and 81 tests including property-based round-trip tests.
+Odekake Pet revives the 2000s blog pet as a serverless web app. Your pet takes real-time trips while you're away and returns with a picture-diary card you can post anywhere. And it *remembers*: every trip becomes experience that visibly grows its personality, favorite places emerge from its history, and its diary can reference past adventures — so the little world on your page is formed by your shared past, not by a content table. Pets visit each other through short text codes — no server, no accounts. Built spec-first with Kiro: every feature lives in `.kiro/specs/` as requirements → design → tasks, guarded by agent hooks and 168 tests including property-based round-trip tests.
 
 ### The problem
 
@@ -23,13 +23,14 @@ Blog pets and desktop mascots were a small, beloved genre of the early social we
 
 - **Care** for one of three pets; its personality (curiosity / sociability) shapes its adventures.
 - **Send it on trips.** It departs on a real timer and returns with an event story and, sometimes, a souvenir.
-- **Get a picture diary.** Each trip becomes a designed 1080×1920 PNG card, made to be saved and posted anywhere.
+- **Watch it grow from memory.** Trips earn experience; the pet's effective personality rises in visible steps, which changes which events can happen next. It never repeats the exact event it had last time at the same place, destinations show "first time / visited N times / favorite" badges, and the pet hints at places it still wants to see. The blog pets of the 2000s were reset every visit — this one accumulates a past.
+- **Get a picture diary.** Each trip becomes a designed 1080×1920 PNG card, made to be saved and posted anywhere. With Firebase configured, the diary is written by hybrid AI (on-device first, cloud fallback) and can quietly reference the pet's memories — memories that live only on your device unless you allow otherwise.
 - **Keep the memories.** An album holds the souvenir shelf, the full trip log, and every diary card.
 - **Visit friends.** Issue an Odekake Code for your pet. A friend pastes it, and *their* pet travels to *your* pet's home. Afterwards a Footprint Code travels back and lands in the host's footprint list — the blog-era "your pet visited my page" loop, rebuilt as two copy-pasted strings with checksums.
 
 ### How it works
 
-Vanilla JS modules, zero build, zero backend. A strict pet/visit state machine (`home → visiting → returning → home`, illegal transitions throw), personality- and time-aware event generation, Canvas-rendered diary cards, and `localStorage` persistence with schema migrations (v1→v2→v3). Friend codes are JSON payloads encoded as Base64URL with an FNV-1a checksum; tampered codes are rejected with a friendly reason.
+Vanilla JS modules, zero build, zero backend. A strict pet/visit state machine (`home → visiting → returning → home`, illegal transitions throw), personality- and time-aware event generation, a memory layer (`src/domain/memory.js`) that derives the pet's past from its trip history and feeds it back into personality growth, event selection, and the AI diary, Canvas-rendered diary cards, and `localStorage` persistence with schema migrations (v1→v2→v3→v4). Friend codes are JSON payloads encoded as Base64URL with an FNV-1a checksum; tampered codes are rejected with a friendly reason.
 
 ## Kiro write-up（提出文）
 
@@ -52,10 +53,11 @@ Working CLI-first with tight spec → task → test loops let a single developer
 
 ## 提出チェックリスト（公式ルール準拠）
 
-- [ ] 公開 GitHub リポジトリ（ルートに `/.kiro`、`.gitignore` に入れない）※承認後
-- [ ] LICENSE がリポジトリ上部で検出可能（MIT、作成済み）
-- [ ] 動作するアプリ URL（GitHub Pages を想定）※承認後
-- [ ] デモ動画: 3分未満、YouTube 公開 ※未作成
+- [x] 公開 GitHub リポジトリ（ルートに `/.kiro`、`.gitignore` に入れない）
+- [x] LICENSE がリポジトリ上部で検出可能（MIT、作成済み）
+- [x] 動作するアプリ URL（GitHub Pages）
+- [x] デモ動画: 3分未満、YouTube 公開（作成済み。ただし画面に旧名「星屑工房」が写っているため、改名を徹底するなら おでかけ画面のカットのみ撮り直しを推奨）
 - [ ] 説明文（本ドラフト）と Kiro write-up（本ドラフト）
 - [ ] カテゴリ = Resurrection を明示
 - [ ] 4,000クレジット申請（任意、締切 2026-12-01 12:00 PT）— 開発がほぼ完了しているため申請しない判断もあり。提出一式と一緒に判断する
+- 備考（2026-11-26）: 企画再評価で記憶システムを追加（docs/RECONCEPT_PLAN.md）。既存コードの使用開示と「期間中の新規作業」として、この追加を提出文に含めること

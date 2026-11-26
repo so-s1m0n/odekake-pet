@@ -13,6 +13,12 @@
  */
 
 import { migrate, hasPet, loadCurrentVisit, saveCurrentVisit, loadPet, savePet, loadVisitsAll, loadFootprints } from './store.js';
+import {
+  deriveMemory,
+  effectivePersonality,
+  experienceFromEvent,
+  applyExperience,
+} from './domain/memory.js';
 import { goSetup, goHome, goWaiting, goHomecoming } from './router.js';
 import { initSetupScreen }      from './screens/setup.js';
 import { initHomeScreen }       from './screens/home.js';
@@ -70,13 +76,13 @@ async function bootstrap() {
 
   // ─── 4. 静的な画面を初期化しておく ───
   //   （hidden のまま初期化。ルーター切り替え後に即座に動作する）
-  initHomeScreen(loadFootprints());
+  initHomeScreen(loadFootprints(), spotsData);
   initSetupScreen(petTypes);
-  initOdekakeScreen(spotsData, friendEvents);
+  initOdekakeScreen(spotsData, friendEvents, loadVisitsAll());
 
   // ─── 5. ペット登録完了後にホーム画面を再初期化するハンドラ ───
   document.addEventListener('petregistered', () => {
-    initHomeScreen(loadFootprints());
+    initHomeScreen(loadFootprints(), spotsData);
   });
 
   // ─── 6. 待機画面・帰宅画面の表示フック ───
@@ -108,6 +114,18 @@ async function bootstrap() {
 
   watchScreen('screen-footprints', () => {
     initFootprintsScreen(loadFootprints());
+  });
+
+  // ホーム画面は表示のたびに再初期化し、性格の成長やおもいでの表示を
+  // 最新の状態に保つ（ハンドラは clone 差し替え式なので二重登録しない）
+  watchScreen('screen-home', () => {
+    initHomeScreen(loadFootprints(), spotsData);
+  });
+
+  // おでかけ選択画面も表示のたびに再初期化し、記憶バッジを最新に保つ
+  // （選択状態のリセットは initOdekakeScreen の既定の振る舞い）
+  watchScreen('screen-odekake', () => {
+    initOdekakeScreen(spotsData, friendEvents, loadVisitsAll());
   });
 
   // ─── 7. 起動時の状態チェック ───
@@ -193,9 +211,17 @@ function executeReturnOnStartup(visit, spots, pet) {
   const returningPet = transitionPetState(pet, PET_STATE.RETURNING);
   const homePet      = transitionPetState(returningPet, PET_STATE.HOME);
 
+  // 記憶が次の冒険に影響する（waiting.js の executeReturn と同じ規則）:
+  // 実効性格で出来事を選び、前回と同じ出来事は候補が複数あれば避ける
+  const memory = deriveMemory(loadVisitsAll());
+  const grownPet = { ...pet, personality: effectivePersonality(pet) };
+
   // 出発日時を使ってイベントを生成する
   const departedAt = new Date(visit.departedAt);
-  const { eventId, eventText, souvenirId } = generateEvent(spot, pet, departedAt);
+  const { eventId, eventText, souvenirId } = generateEvent(
+    spot, grownPet, departedAt, '',
+    { avoidEventId: memory.lastEventBySpot[visit.spotId] ?? null },
+  );
 
   // 絵日記データを組み立てる
   const cardData = {
@@ -207,10 +233,13 @@ function executeReturnOnStartup(visit, spots, pet) {
     returnedAt: new Date().toISOString(),
   };
 
-  // Visit を完了状態にして保存する
+  // Visit を完了状態にして保存し、旅の経験をペットに蓄積する
   const completedVisit = completeVisit(visit, eventId, souvenirId ?? null, cardData);
   saveCurrentVisit(completedVisit);
-  savePet(homePet);
+  savePet(applyExperience(
+    homePet,
+    experienceFromEvent(spot, eventId, souvenirId ?? null),
+  ));
 
   // タイマーが動いていれば停止しておく（念のため）
   stopWaitingTimer();

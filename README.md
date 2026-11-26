@@ -7,7 +7,8 @@ A tiny pet that lives in your browser, wanders off while you're away, and comes 
 ## Summary (for Judges)
 
 - **What:** A serverless web app that revives the 2000s "blog pet" — a small companion that lived on your blog sidebar. Your pet leaves on little trips while you are away, and when it returns it brings back a shareable picture-diary card (a vertical PNG, ready to post anywhere).
-- **The twist:** Pets can visit *each other's* homes. You hand a friend a short text code; their pet can travel to your pet's home, and a "footprint code" travels back as proof of the visit. No server, no accounts, no sign-up — the whole exchange is two copy-pasted strings.
+- **The twist — a world formed by your memories:** The pet *remembers* every trip. Accumulated memories change what happens next: its personality visibly grows with experience, favorite places emerge, the same event doesn't repeat twice in a row at the same place, and its AI diary can quietly reference past adventures. No two pets diverge the same way, because no two histories are the same.
+- **And:** Pets can visit *each other's* homes. You hand a friend a short text code; their pet can travel to your pet's home, and a "footprint code" travels back as proof of the visit. No server, no accounts, no sign-up — the whole exchange is two copy-pasted strings.
 - **How it was built:** Spec-driven with Kiro. Every feature started as a spec in [`.kiro/specs/`](.kiro/specs/) (requirements → design → tasks), was implemented task by task, and is guarded by agent hooks and a test suite that includes property-based tests.
 - **Try it:** Open `index.html` via any static file server (see "Running locally"). Everything runs client-side; data lives in `localStorage`.
 
@@ -24,9 +25,11 @@ Odekake Pet resurrects the genre's core idea — **asynchronous companionship** 
 ## Features
 
 - **Care loop** — feed, play, and watch your pet's affinity grow; the pet's personality (curiosity / sociability) shapes its adventures.
-- **Trips (Odekake)** — pick a destination; the pet departs, time passes, and it returns with an event story and sometimes a souvenir.
+- **Memory that forms the pet** — every trip is remembered on-device. Experience points from each adventure slowly raise the pet's effective personality (shown on the home screen as it grows), a favorite place emerges from its history, destinations display "first time / visited N times / favorite" badges, and the event engine avoids repeating the exact event it had last time at the same place. The world is quite literally formed by the pet's accumulated past.
+- **Trips (Odekake)** — pick a destination (or follow the pet's memory-based hint); the pet departs, time passes, and it returns with an event story and sometimes a souvenir.
 - **Picture diary cards** — every trip can be turned into a designed, shareable PNG card.
 - **AI diary (hybrid inference)** — when Firebase is configured, the diary text on the card is written by AI in the pet's first-person voice, using Firebase AI Logic: on-device (Gemini Nano via Chrome's Prompt API) first, cloud Gemini as fallback, and the built-in templates if AI is unavailable. The card shows a badge naming which one wrote it.
+- **Privacy by architecture** — the memory summary used by the diary is assembled on-device. A home-screen setting ("let the cloud diary use my pet's memories", off by default) controls whether that personal context may leave the device: when off, memory-rich generation is attempted on-device only, and the cloud fallback receives only today's facts. Personality growth and memory bookkeeping never leave the device at all.
 - **Memory album** — souvenirs on a shelf, a log of every trip, and re-viewable diary cards.
 - **Friend visits** — issue an "Odekake Code" for your pet; a friend pastes it to send *their* pet to your pet's home. After the visit, a "Footprint Code" travels back and is recorded in the host's footprint list ("Yuki-chan came to play 🐧").
 - **Zero backend** — vanilla JS modules, `localStorage` persistence with schema migrations, and a strict state machine (`home → visiting → returning → home`).
@@ -36,11 +39,12 @@ Odekake Pet resurrects the genre's core idea — **asynchronous companionship** 
 | Area | Implementation |
 | --- | --- |
 | State machine | `src/domain/pet.js`, `src/domain/visit.js` — transitions are explicit; illegal transitions throw. |
-| Event generation | `src/domain/event-generator.js` — templates filtered by personality and time of day, with graceful fallbacks. |
+| Event generation | `src/domain/event-generator.js` — templates filtered by personality and time of day, with graceful fallbacks and memory-based repeat avoidance. |
+| Memory & growth | `src/domain/memory.js` — derives the pet's memory from trip history, converts trips into experience, computes the grown (effective) personality, and builds the on-device memory digest for the diary. |
 | Friend codes | `src/domain/odekake-code.js` — JSON payload → Base64URL + FNV-1a checksum; tampered or truncated codes are rejected with a friendly reason. |
 | Diary cards | `src/domain/card-generator.js` — Canvas rendering at 1080×1920. |
 | AI diary | `src/ai/diary-ai.js` — Firebase AI Logic hybrid inference (see below). |
-| Storage | `src/store.js` — the only module that touches `localStorage`; schema versioning with migrations (v1→v2→v3). |
+| Storage | `src/store.js` — the only module that touches `localStorage`; schema versioning with migrations (v1→v2→v3→v4). |
 
 ## AI diary (Firebase AI Logic)
 
@@ -58,6 +62,14 @@ The diary sentence on each card can be generated by AI from the trip's facts
 3. **Template** — if Firebase is not configured or generation fails, the
    existing template text is used silently. The app never breaks.
 
+**Memory and permission:** the diary prompt can include a short digest of
+the pet's memories (trips taken, favorite place, souvenirs), assembled
+on-device from the trip history. Whether that digest may be sent to the
+cloud is the user's choice (home-screen setting, off by default). When
+off, the app first tries an on-device-only generation with the digest —
+so memories can shape the diary without leaving the machine — and only
+the memory-free prompt is used for the hybrid/cloud attempt.
+
 **Enabling it:** create a Firebase project, enable AI Logic with the Gemini
 Developer API backend, set up App Check, then fill in `FIREBASE_CONFIG` in
 `src/ai/diary-ai.js`. Until then the config is an empty placeholder and the
@@ -71,7 +83,7 @@ This project was developed spec-first with Kiro CLI:
 
 - **Specs:** [`.kiro/specs/`](.kiro/specs/) contains requirements (EARS-style, numbered `REQ-*`), design documents, and task lists for every milestone (pet core, trips & events, diary & album, friend visits). One sentence from the friend-visit spec — *"a code round-trip must not lose any data"* — became a property-based test that runs 400 randomized round-trips on every test pass.
 - **Hooks:** [`.kiro/hooks/`](.kiro/hooks/) — `run-tests-on-save` runs the full suite whenever a source file is edited; `secret-check-before-commit` scans staged files for credential-like content before any commit.
-- **Tests:** 104 checks — unit tests, state-machine invariants, and two property-based test suites (visit timing/transitions, code round-trips).
+- **Tests:** 168 checks — unit tests, state-machine invariants, and two property-based test suites (visit timing/transitions, code round-trips).
 
 ## Running locally
 

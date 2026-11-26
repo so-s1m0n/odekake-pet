@@ -13,6 +13,7 @@
 
 import { createVisit } from '../domain/visit.js';
 import { transitionPetState } from '../domain/pet.js';
+import { deriveMemory } from '../domain/memory.js';
 import { loadPet, savePet, saveCurrentVisit } from '../store.js';
 import { goHome, goWaiting } from '../router.js';
 import { decodeFriendCode, shortHash } from '../domain/odekake-code.js';
@@ -42,14 +43,20 @@ let verifiedPayload = null;
  * @param {import('../domain/event-generator.js').SpotDef[]} spots
  *   spots.json から読み込んだスポット定義の配列
  */
-export function initOdekakeScreen(spots, friendEvents = []) {
+export function initOdekakeScreen(spots, friendEvents = [], visits = []) {
   // 選択状態をリセット
   selectedSpotId = null;
   currentFriendEvents = friendEvents || [];
   verifiedPayload = null;
 
+  // 冒険履歴から記憶を導出し、バッジとおすすめに使う
+  const memory = deriveMemory(visits);
+
   // スポット一覧を描画する
-  renderSpotList(spots);
+  renderSpotList(spots, memory);
+
+  // 記憶にもとづくおすすめ文を表示する
+  renderMemoryHint(spots, memory);
 
   // 友達コード入力まわりを初期状態に戻す（M7）
   const friendInput = document.getElementById('friend-code-input');
@@ -109,8 +116,9 @@ export function initOdekakeScreen(spots, friendEvents = []) {
  * 既存の内容を一度クリアしてから生成する。
  *
  * @param {import('../domain/event-generator.js').SpotDef[]} spots
+ * @param {import('../domain/memory.js').PetMemory} memory
  */
-function renderSpotList(spots) {
+function renderSpotList(spots, memory) {
   const listEl = document.getElementById('spot-list');
   if (!listEl) return;
 
@@ -120,18 +128,53 @@ function renderSpotList(spots) {
   }
 
   spots.forEach(spot => {
-    const card = buildSpotCard(spot);
+    const card = buildSpotCard(spot, memory);
     listEl.appendChild(card);
   });
+}
+
+/**
+ * 記憶にもとづくおすすめ文を表示する。
+ * まだ行ったことのない場所があればそちらへの興味を、
+ * 全部行ったことがあればお気に入りを表示する。
+ * 冒険がまだ無い場合は何も表示しない。
+ *
+ * @param {import('../domain/event-generator.js').SpotDef[]} spots
+ * @param {import('../domain/memory.js').PetMemory} memory
+ */
+function renderMemoryHint(spots, memory) {
+  const hintEl = document.getElementById('odekake-memory-hint');
+  if (!hintEl) return;
+
+  const pet = loadPet();
+  const petName = pet ? pet.name : 'あのこ';
+
+  if (!memory || memory.totalTrips === 0) {
+    hintEl.textContent = '';
+    return;
+  }
+
+  const unvisited = spots.find(s => !memory.tripsBySpot[s.id]);
+  if (unvisited) {
+    hintEl.textContent =
+      `🐾 ${petName}は、まだ行ったことのない「${unvisited.displayName}」が気になるみたい`;
+    return;
+  }
+
+  const favorite = spots.find(s => s.id === memory.favoriteSpotId);
+  hintEl.textContent = favorite
+    ? `🐾 ${petName}のお気に入りは「${favorite.displayName}」みたい。また行く？`
+    : '';
 }
 
 /**
  * スポット1件分のカード要素を生成して返す。
  *
  * @param {import('../domain/event-generator.js').SpotDef} spot
+ * @param {import('../domain/memory.js').PetMemory} [memory]
  * @returns {HTMLElement}
  */
-function buildSpotCard(spot) {
+function buildSpotCard(spot, memory) {
   // カードのラッパー要素
   const card = document.createElement('div');
   card.className = 'spot-card';
@@ -163,6 +206,22 @@ function buildSpotCard(spot) {
 
   textWrap.appendChild(nameEl);
   textWrap.appendChild(descEl);
+
+  // 記憶バッジ（行った回数・お気に入り・はじめて）
+  if (memory) {
+    const count = memory.tripsBySpot[spot.id] || 0;
+    const badgeEl = document.createElement('p');
+    badgeEl.className = 'spot-card__badge';
+    if (count === 0) {
+      badgeEl.textContent = '✨ はじめての場所';
+    } else if (spot.id === memory.favoriteSpotId && memory.totalTrips >= 2) {
+      badgeEl.textContent = `⭐ お気に入り ・ ${count}回行った`;
+    } else {
+      badgeEl.textContent = `🐾 ${count}回行ったことがある`;
+    }
+    textWrap.appendChild(badgeEl);
+  }
+
   card.appendChild(iconEl);
   card.appendChild(textWrap);
 

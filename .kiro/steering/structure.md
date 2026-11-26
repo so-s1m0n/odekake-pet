@@ -74,7 +74,7 @@ odekake-pet/
 │   │       └── ...
 │   │
 │   ├── spots/              # 訪問先スポットの背景・素材
-│   │   ├── hoshikuzu-kobo/ # 星屑工房
+│   │   ├── hoshikuzu-kobo/ # 月夜の小屋
 │   │   │   ├── bg.png      # 背景イラスト（絵日記カード用）
 │   │   │   └── thumb.png   # サムネイル（スポット選択UI用）
 │   │   ├── mori-hyohonshitsu/  # 森の標本室

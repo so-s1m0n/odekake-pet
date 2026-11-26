@@ -335,12 +335,12 @@ describe('generateEvent — 実データ（spots.jsonから）', () => {
 
   const hoshikuzuSpot = spotsData.spots.find(s => s.id === 'hoshikuzu-kobo');
 
-  it('星屑工房: 条件なしテンプレートが存在する（フォールバックが機能する）', () => {
+  it('月夜の小屋: 条件なしテンプレートが存在する（フォールバックが機能する）', () => {
     const noCondEvents = hoshikuzuSpot.events.filter(e => e.conditions === null);
     assert.ok(noCondEvents.length >= 1, '条件なしテンプレートが1件以上ある');
   });
 
-  it('星屑工房: どんなペット・時間帯でも generateEvent がクラッシュしない', () => {
+  it('月夜の小屋: どんなペット・時間帯でも generateEvent がクラッシュしない', () => {
     const pets = [
       { name: 'A', personality: { curiosity: 0, sociability: 0 } },
       { name: 'B', personality: { curiosity: 1, sociability: 1 } },

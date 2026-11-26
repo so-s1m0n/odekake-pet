@@ -14,6 +14,7 @@ import {
   isFirebaseConfigured,
   describePersonality,
   buildDiaryPrompt,
+  planDiaryAttempts,
   cleanDiaryText,
   normalizeInferenceSource,
   pickDiaryResult,
@@ -658,5 +659,70 @@ describe('タイムアウト構造', () => {
     );
     assert.equal(result, 'recovered', 'タイムアウトを挟んでも成功すれば結果が返る');
     assert.equal(calls, 3, '試行は3回');
+  });
+});
+
+// ─── おもいでの要約と試行計画（2026-11-26 追加） ────────────────────────────
+
+describe('buildDiaryPrompt のおもいで', () => {
+  const baseFacts = {
+    petName: 'もち',
+    personality: { curiosity: 1, sociability: 1 },
+    spotName: '月夜の小屋',
+    eventText: 'ランプを作った。',
+    souvenirName: null,
+  };
+
+  it('memoryDigest があればプロンプトに含まれる', () => {
+    const prompt = buildDiaryPrompt({
+      ...baseFacts,
+      memoryDigest: 'これまで3回おでかけした。',
+    });
+    assert.includes(prompt, 'わたしのおもいで');
+    assert.includes(prompt, 'これまで3回おでかけした。');
+  });
+
+  it('memoryDigest が無ければ記憶セクションは入らない', () => {
+    const prompt = buildDiaryPrompt(baseFacts);
+    assert.notIncludes(prompt, 'おもいで');
+  });
+});
+
+describe('planDiaryAttempts', () => {
+  const factsWithMemory = {
+    petName: 'もち',
+    personality: null,
+    spotName: '月夜の小屋',
+    eventText: 'ランプを作った。',
+    souvenirName: null,
+    memoryDigest: 'これまで3回おでかけした。',
+  };
+
+  it('おもいが無ければ通常のハイブリッド1回だけ', () => {
+    const facts = { ...factsWithMemory, memoryDigest: null };
+    assert.deepEqual(planDiaryAttempts(facts, {}), [
+      { mode: 'prefer_on_device', includeMemory: false },
+    ]);
+  });
+
+  it('許可が無ければ、端末内のみ（おもい入り）→ ハイブリッド（おもいなし）', () => {
+    assert.deepEqual(planDiaryAttempts(factsWithMemory, {}), [
+      { mode: 'on_device', includeMemory: true },
+      { mode: 'prefer_on_device', includeMemory: false },
+    ]);
+    assert.deepEqual(
+      planDiaryAttempts(factsWithMemory, { shareMemoryWithCloud: false }),
+      [
+        { mode: 'on_device', includeMemory: true },
+        { mode: 'prefer_on_device', includeMemory: false },
+      ],
+    );
+  });
+
+  it('許可があれば、おもい入りのまま通常のハイブリッドで生成する', () => {
+    assert.deepEqual(
+      planDiaryAttempts(factsWithMemory, { shareMemoryWithCloud: true }),
+      [{ mode: 'prefer_on_device', includeMemory: true }],
+    );
   });
 });

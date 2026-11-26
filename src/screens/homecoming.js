@@ -15,7 +15,18 @@
  *           innerHTML への直接代入は行わない。
  */
 
-import { appendVisit, clearCurrentVisit, loadPet } from '../store.js';
+import {
+  appendVisit,
+  clearCurrentVisit,
+  loadPet,
+  loadVisitsAll,
+  loadSettings,
+} from '../store.js';
+import {
+  deriveMemory,
+  buildMemoryDigest,
+  effectivePersonality,
+} from '../domain/memory.js';
 import { goHome } from '../router.js';
 import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
 import { generateDiaryText, INFERENCE_SOURCE } from '../ai/diary-ai.js';
@@ -391,15 +402,28 @@ async function buildDiaryCardData(spot) {
   try {
     const pet = loadPet();
     const souvenir = spot.souvenirs?.find(sv => sv.id === cardData.souvenirId);
+
+    // おもいでの要約を端末内で組み立てる。今回の旅も含めて集計する
+    // （Visit の履歴への追記は「おうちへ」を押した時点で行われるため、
+    // ここでは現在の Visit を足して渡す）
+    const memory = deriveMemory([...loadVisitsAll(), currentVisit]);
+    const memoryDigest = buildMemoryDigest(memory, currentSpots);
+
     const facts = {
       petName:      cardData.petName,
-      personality:  pet ? pet.personality : null,
+      // 日記に伝える性格は、経験で育った実効性格
+      personality:  pet ? effectivePersonality(pet) : null,
       spotName:     spot.displayName || cardData.spotId,
       eventText:    cardData.eventText,
       souvenirName: souvenir ? souvenir.displayName : null,
+      memoryDigest,
     };
 
-    const diary = await generateDiaryText(facts, cardData.eventText);
+    // おもいをクラウド生成にも使うかは、利用者の許可設定に従う
+    // （許可が無ければ、おもい入り生成は端末内のみで試みられる）
+    const diary = await generateDiaryText(facts, cardData.eventText, {
+      shareMemoryWithCloud: loadSettings().shareMemoryWithCloud,
+    });
     if (diary.source === INFERENCE_SOURCE.TEMPLATE) {
       // AI が使えなかった → テンプレ文のまま（従来動作）
       return cardData;

@@ -292,3 +292,68 @@
   font-weight: bold;
   color: var(--color-text);
 }
+
+/* ─────────────────────────────────────────────
+   せいかくパネル（経験による成長とおもいでの要約）
+   ───────────────────────────────────────────── */
+
+.personality-panel {
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  text-align: left;
+}
+
+.personality-panel__title {
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--space-2);
+}
+
+.personality-panel__words {
+  font-weight: bold;
+  margin: 0 0 var(--space-2);
+}
+
+.personality-panel__axis {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  margin: 0 0 var(--space-1);
+}
+
+.personality-panel__memory {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  margin: var(--space-2) 0 0;
+}
+
+/* ─────────────────────────────────────────────
+   AIとプライバシーのパネル（おもいでのクラウド共有トグル）
+   ───────────────────────────────────────────── */
+
+.privacy-panel {
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  text-align: left;
+}
+
+.privacy-panel__title {
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--space-2);
+}
+
+.privacy-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.privacy-panel__note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  margin: var(--space-2) 0 0;
+}

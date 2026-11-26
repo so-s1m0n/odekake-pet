@@ -5,9 +5,15 @@
  */
 
 import { applyCareAction, PET_STATE, PET_TYPE_ICONS, isAtHome } from '../domain/pet.js';
-import { loadPet, savePet, loadVisitsAll } from '../store.js';
+import { loadPet, savePet, loadVisitsAll, loadSettings, saveSettings } from '../store.js';
 import { goOdekake, goWaiting, goAlbum, goFootprints } from '../router.js';
 import { encodeFriendCode, CODE_VERSION } from '../domain/odekake-code.js';
+import {
+  deriveMemory,
+  effectivePersonality,
+  personalityStage,
+} from '../domain/memory.js';
+import { describePersonality } from '../ai/diary-ai.js';
 
 // ─────────────────────────────────────────────
 // 定数
@@ -31,7 +37,7 @@ let isAnimating = false;
  * ホーム画面を初期化し、ペットデータを読み込んで描画する。
  * main.js の DOMContentLoaded 後、またはペット登録完了後に呼ぶこと。
  */
-export function initHomeScreen(footprints = []) {
+export function initHomeScreen(footprints = [], spots = []) {
   const pet = loadPet();
   if (!pet) {
     console.error('[home] ペットデータが存在しません');
@@ -73,6 +79,12 @@ export function initHomeScreen(footprints = []) {
 
   // おもいで数を表示する（訪問履歴の件数）
   renderMemoriesCount();
+
+  // 性格の成長とおもいでの要約を表示する
+  renderPersonality(pet, spots);
+
+  // AIとプライバシーの設定トグルを同期する
+  initPrivacyToggle();
 
   // 足跡通知エリアを描画する（M7・TASK-34）
   renderFootprintNotice(footprints || []);
@@ -337,6 +349,76 @@ function renderOdekakeStatus(pet) {
       existingWaitingBtn.remove();
     }
   }
+}
+
+/**
+ * 性格パネルを描画する。
+ * 実効性格の言葉、軸ごとの成長ドット、おもいでの要約を表示する。
+ *
+ * @param {import('../domain/pet.js').Pet} pet
+ * @param {import('../domain/event-generator.js').SpotDef[]} spots
+ */
+function renderPersonality(pet, spots) {
+  const wordsEl = document.getElementById('personality-words');
+  if (wordsEl) {
+    wordsEl.textContent = describePersonality(effectivePersonality(pet));
+  }
+
+  const growthEl = document.getElementById('personality-growth');
+  if (growthEl) {
+    while (growthEl.firstChild) growthEl.removeChild(growthEl.firstChild);
+    const stage = personalityStage(pet);
+    const axes = [
+      { label: '好奇心', axis: stage.curiosity },
+      { label: '社交性', axis: stage.sociability },
+    ];
+    for (const { label, axis } of axes) {
+      const row = document.createElement('p');
+      row.className = 'personality-panel__axis';
+      const dots = '●'.repeat(axis.effective + 1) + '○'.repeat(2 - axis.effective);
+      const progress = axis.xpToNext === null
+        ? 'いちばん育ったよ'
+        : axis.xp === 0
+          ? 'おでかけで育っていくよ'
+          : `次の成長まで あと${axis.xpToNext}`;
+      row.textContent = `${label} ${dots}（${progress}）`;
+      growthEl.appendChild(row);
+    }
+  }
+
+  const memoryEl = document.getElementById('memory-summary');
+  if (memoryEl) {
+    const memory = deriveMemory(loadVisitsAll());
+    if (memory.totalTrips === 0) {
+      memoryEl.textContent = 'おもいでは、まだこれから。';
+    } else {
+      const favorite = (spots || []).find(s => s.id === memory.favoriteSpotId);
+      const favoriteText = favorite && memory.totalTrips >= 2
+        ? ` ・ お気に入りは ${favorite.displayName}`
+        : '';
+      memoryEl.textContent =
+        `おもいで ${memory.totalTrips}件 ・ おみやげ ${memory.souvenirCount}つ${favoriteText}`;
+    }
+  }
+}
+
+/**
+ * 「おもいでをクラウドの日記にも使う」トグルを設定に同期する。
+ * change ハンドラは clone 差し替えで二重登録を防ぐ。
+ */
+function initPrivacyToggle() {
+  const toggle = document.getElementById('share-memory-toggle');
+  if (!toggle) return;
+
+  const settings = loadSettings();
+  toggle.checked = settings.shareMemoryWithCloud === true;
+
+  const newToggle = toggle.cloneNode(true);
+  toggle.replaceWith(newToggle);
+  newToggle.checked = settings.shareMemoryWithCloud === true;
+  newToggle.addEventListener('change', () => {
+    saveSettings({ ...loadSettings(), shareMemoryWithCloud: newToggle.checked });
+  });
 }
 
 /**

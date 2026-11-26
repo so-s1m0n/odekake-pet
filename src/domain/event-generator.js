@@ -98,10 +98,14 @@ export function getTimeOfDay(date) {
  * @param {Pet}     pet            - ペットオブジェクト（name と personality を使用）
  * @param {Date}    [departedAt]   - 出発日時（省略時は現在時刻）
  * @param {string}  [hostName]     - ホストペット名（M7 友達訪問用。省略時は空文字）
+ * @param {Object}  [options]
+ * @param {string|null} [options.avoidEventId] - 記憶による反復回避:
+ *   同じ場所で前回起きた出来事ID。候補が複数ある場合だけ候補から外す
+ *   （domain/memory.js の lastEventBySpot から渡す想定）
  * @returns {GeneratedEvent}
  * @throws {Error} spot.events が空配列の場合
  */
-export function generateEvent(spot, pet, departedAt = new Date(), hostName = '') {
+export function generateEvent(spot, pet, departedAt = new Date(), hostName = '', options = {}) {
   const templates = spot.events;
 
   if (!templates || templates.length === 0) {
@@ -119,7 +123,14 @@ export function generateEvent(spot, pet, departedAt = new Date(), hostName = '')
     : templates.filter(t => t.conditions === null);
 
   // ステップ3: フォールバックも0件 → 先頭テンプレートを使う
-  const pool = candidates.length > 0 ? candidates : [templates[0]];
+  let pool = candidates.length > 0 ? candidates : [templates[0]];
+
+  // ステップ3.5: 記憶による反復回避。前回と同じ出来事が候補に複数ある
+  // 場合だけ外す（候補が1件しかなければ、その出来事をそのまま使う）
+  if (options.avoidEventId && pool.length > 1) {
+    const withoutLast = pool.filter(t => t.id !== options.avoidEventId);
+    if (withoutLast.length > 0) pool = withoutLast;
+  }
 
   // ステップ4: ランダム選択
   const selected = pool[Math.floor(Math.random() * pool.length)];

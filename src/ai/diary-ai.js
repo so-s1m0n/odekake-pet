@@ -53,6 +53,20 @@
 * 生成全体の締め切り OVERALL_GENERATION_TIMEOUT_MS（90秒）の2段構え。
 * 試行のタイムアウト自体も再試行の対象とし、総時間は締め切りで
 * 抑える（attemptTimeoutMs / createGenerationTimeoutError を参照）。
+*
+* 記憶と許可（2026-11-26 追加）: 日記プロンプトには、端末内で組み立てた
+* 「おもいで」の要約（facts.memoryDigest。domain/memory.js が冒険履歴
+* から導出する）を含められる。おもいでは個人的な文脈なので、端末の
+* 外へ出すかどうかは利用者の許可（options.shareMemoryWithCloud、
+* 既定は false）で決まる:
+*  - 許可なし: まず端末内のみ（mode: 'on_device'）で、おもいで入りの
+*    プロンプトで生成を試みる。端末内で書ければ、おもいでは端末の
+*    外に出ない。端末内で書けない場合は、おもいを除いたプロンプトで
+*    通常のハイブリッド生成（prefer_on_device）に進む。
+*  - 許可あり: おもいで入りのプロンプトで通常のハイブリッド生成。
+* 試行計画は純粋関数 planDiaryAttempts が決める（テスト対象）。
+* 性格の形成や記憶の集計そのものは端末内の決定的な処理であり、
+* AI にもクラウドにも送られない。
 */
 
 // ─────────────────────────────────────────────
@@ -252,6 +266,8 @@ return `${curiosity}で、${sociability}`;
 * @property {string} spotName - 行き先の表示名
 * @property {string} eventText - 実際に起きた出来事（テンプレ文）
 * @property {string|null} souvenirName - おみやげの表示名（null は無し）
+* @property {string|null} [memoryDigest] - おもいでの要約（端末内で組み立て。
+*   buildMemoryDigest の戻り値。無ければ記憶セクションを入れない）
 */
 
 /**
@@ -273,15 +289,54 @@ const lines = [
 if (facts.souvenirName) {
 lines.push(`- おみやげ: ${facts.souvenirName}`);
 }
+if (typeof facts.memoryDigest === 'string' && facts.memoryDigest.length > 0) {
+lines.push(`- わたしのおもいで: ${facts.memoryDigest}`);
+}
 lines.push(
 '',
 '',
 '- ペットの一人称で、やさしく可愛い口調で書く',
 '- 2〜3文で、全体で90文字以内にする',
 '- 出来事の内容は変えず、言い回しだけを日記風にする',
+);
+if (typeof facts.memoryDigest === 'string' && facts.memoryDigest.length > 0) {
+lines.push('- おもいでに触れるときは、さりげなく一言だけにする');
+}
+lines.push(
 '- 本文だけを出力する。タイトル・引用符・箇条書きは付けない',
 );
 return lines.join('\n');
+}
+
+/**
+* 日記生成の試行計画を決める（純粋関数）。
+*
+* おもいで（memoryDigest）がある場合、その扱いは許可で変わる:
+*  - 許可なし（shareMemoryWithCloud !== true）: 先に端末内のみ
+*    （on_device）でおもいで入りの生成を試み、ダメならおもいを
+*    除いて通常のハイブリッド（prefer_on_device）で生成する。
+*    おもいでは構造的に端末の外へ出ない。
+*  - 許可あり: おもいで入りのまま通常のハイブリッドで生成する。
+* おもいでが無い場合は、通常のハイブリッド1回だけ。
+*
+* @param {DiaryFacts} facts
+* @param {object} [options]
+* @param {boolean} [options.shareMemoryWithCloud]
+* @returns {Array<{ mode: string, includeMemory: boolean }>}
+*/
+export function planDiaryAttempts(facts, options = {}) {
+const hasMemory = typeof facts?.memoryDigest === 'string'
+&& facts.memoryDigest.length > 0;
+if (!hasMemory) {
+return [{ mode: 'prefer_on_device', includeMemory: false }];
+}
+if (options?.shareMemoryWithCloud === true) {
+return [{ mode: 'prefer_on_device', includeMemory: true }];
+}
+return [
+{ mode: 'on_device', includeMemory: true },
+{ mode: 'prefer_on_device', includeMemory: false },
+];
 }
 
 /** 日記文の最大文字数（カード側の切り詰め上限と揃える） */
@@ -544,8 +599,32 @@ globalThis.__odekakeLastAiError = null;
 // 生成本体（ネットワーク依存）
 // ─────────────────────────────────────────────
 
-/** 初期化済みの Firebase モデル（遅延初期化してキャッシュする） */
-let cachedModel = null;
+/** 初期化済みの Firebase モデル（推論モードごとに遅延初期化してキャッシュする） */
+const cachedModels = new Map();
+
+/** 初期化済みの AI ハンドル（アプリ初期化は全体で1回だけ） */
+let cachedAi = null;
+
+/**
+* Firebase アプリと AI ハンドルを初期化して返す（1回だけ）。
+* initializeApp は同じ名前で2回呼ぶと例外になるため、モデルが
+* モード別に増えてもアプリ初期化はここに集約する。
+*
+* @returns {Promise<{ aiModule: object, ai: object }>}
+*/
+async function loadFirebaseAi() {
+if (cachedAi) return cachedAi;
+
+const appModule = await import(`${FIREBASE_CDN_BASE}/firebase-app.js`);
+const aiModule = await import(`${FIREBASE_CDN_BASE}/firebase-ai.js`);
+
+const app = appModule.initializeApp(FIREBASE_CONFIG);
+await initAppCheck(app);
+const ai = aiModule.getAI(app, { backend: new aiModule.GoogleAIBackend()});
+
+cachedAi = { aiModule, ai };
+return cachedAi;
+}
 
 /**
 * デバイスモデル初期化の「1回だけ実行」を担う関数を作る。
@@ -625,19 +704,23 @@ console.warn('[diary-ai] App Check の初期化に失敗しました（生成は
 * getGenerativeModel はユーザー操作（ボタンクリック）の流れで呼ぶこと
 * （inferenceMode の前提条件）。
 *
+* @param {string} [mode] - 推論モード。'prefer_on_device'（既定:
+*   端末内優先・クラウドへ自動フォールバック）または 'on_device'
+*   （端末内のみ。おもいでを端末の外へ出さない生成に使う）
 * @returns {Promise<object>} GenerativeModel
 */
-async function loadFirebaseModel() {
-if (cachedModel) return cachedModel;
+async function loadFirebaseModel(mode = 'prefer_on_device') {
+if (cachedModels.has(mode)) return cachedModels.get(mode);
 
-const appModule = await import(`${FIREBASE_CDN_BASE}/firebase-app.js`);
-const aiModule = await import(`${FIREBASE_CDN_BASE}/firebase-ai.js`);
+const { aiModule, ai } = await loadFirebaseAi();
 
-const app = appModule.initializeApp(FIREBASE_CONFIG);
-await initAppCheck(app);
-const ai = aiModule.getAI(app, { backend: new aiModule.GoogleAIBackend()});
-
-cachedModel = aiModule.getGenerativeModel(ai, {
+const model = mode === 'on_device'
+? aiModule.getGenerativeModel(ai, {
+// 端末内のみ。端末モデルが無い環境では生成自体が失敗し、
+// 呼び出し側が次の試行（おもいなしのハイブリッド）へ進む
+mode: 'on_device',
+})
+: aiModule.getGenerativeModel(ai, {
 // オンデバイス指定（prefer_on_device）は従来どおり
 mode: 'prefer_on_device',
 model: CLOUD_MODEL_NAME,
@@ -647,18 +730,20 @@ model: CLOUD_MODEL_NAME,
 // CLOUD_MODEL_NAME のコメントと devlog 2026-11-26 を参照）
 inCloudParams: { model: CLOUD_MODEL_NAME },
 });
-return cachedModel;
+cachedModels.set(mode, model);
+return model;
 }
 
 /**
 * Firebase AI Logic で1回生成し、生の応答情報を返す。
 *
 * @param {string} prompt
+* @param {string} [mode] - 推論モード（loadFirebaseModel と同じ）
 * @returns {Promise<{ text: string, inferenceSource: *}>}
 * @throws 生成失敗・タイムアウト時
 */
-async function generateWithFirebase(prompt) {
-const model = await loadFirebaseModel();
+async function generateWithFirebase(prompt, mode = 'prefer_on_device') {
+const model = await loadFirebaseModel(mode);
 // 生成全体の締め切り。デバイスモデル初期化の待ちもここから数える
 const deadline = Date.now() + OVERALL_GENERATION_TIMEOUT_MS;
 // 公式ハイブリッド手順 Step 6: 生成の前にデバイスモデルを初期化する
@@ -695,12 +780,20 @@ shouldRetry: e => isTransientAiError(e) || isGenerationTimeoutError(e),
 * Firebase 未設定・生成失敗時は templateText をそのまま返し、
 * 例外は投げない（呼び出し側は常に結果を受け取れる）。
 *
+* おもいで（facts.memoryDigest）の扱いは planDiaryAttempts の計画に
+* 従う: 許可が無ければ、おもいで入り生成は端末内のみで試み、
+* 失敗したらおもいを除いて通常のハイブリッド生成に進む。
+* 全試行が失敗したらテンプレへ落ち、最後の失敗理由を保持する。
+*
 * @param {DiaryFacts} facts - 旅の事実
 * @param {string} templateText - フォールバック用のテンプレ文
+* @param {object} [options]
+* @param {boolean} [options.shareMemoryWithCloud] - おもいをクラウド
+*   生成にも使ってよいか（既定 false）
 * @returns {Promise<{ text: string, source: string}>}
 * source は INFERENCE_SOURCE の値
 */
-export async function generateDiaryText(facts, templateText) {
+export async function generateDiaryText(facts, templateText, options = {}) {
 const fallback = { text: templateText, source: INFERENCE_SOURCE.TEMPLATE};
 
 // 前回の失敗理由が残らないよう、試行のたびに消してから始める
@@ -715,28 +808,45 @@ message: 'Firebase が未設定のため AI 生成を試行できませんでし
 return fallback;
 }
 
+const attempts = planDiaryAttempts(facts, options);
+let lastError = null;
+
+for (const attempt of attempts) {
+const attemptFacts = attempt.includeMemory
+? facts
+: { ...facts, memoryDigest: null };
 try {
-const raw = await generateWithFirebase(buildDiaryPrompt(facts));
+const raw = await generateWithFirebase(
+buildDiaryPrompt(attemptFacts),
+attempt.mode,
+);
 // inferenceSource が読めない旧 SDK では、ハイブリッド呼び出しが
 // 成功した事実のみ確かなためクラウド扱いにする（ピン留めした
-// v12.5.0 では通常どおり値が返る）
-const source = normalizeInferenceSource(raw.inferenceSource)
-?? INFERENCE_SOURCE.CLOUD;
+// v12.5.0 では通常どおり値が返る）。端末内のみの試行が成功した
+// 場合は、構造的に端末内で書かれている
+const source = attempt.mode === 'on_device'
+? INFERENCE_SOURCE.ON_DEVICE
+: (normalizeInferenceSource(raw.inferenceSource)
+?? INFERENCE_SOURCE.CLOUD);
 const picked = pickDiaryResult([{ source, text: raw.text}]);
-if (!picked) {
-// 生成は返ったが出力が日記文として使えなかった（理由の保持用）
-recordAiError({
+if (picked) return picked;
+// 生成は返ったが出力が日記文として使えなかった（次の試行へ）
+lastError = {
 name: 'EmptyResultError',
 message: 'AI の出力が日記文として使えませんでした',
-});
-return fallback;
-}
-return picked;
+};
 } catch (e) {
-// 失敗は静かにテンプレへ落とす（アプリを壊さない）。
-// 理由は診断用に保持する（getLastAiError / __odekakeLastAiError）
-console.warn('[diary-ai] AI生成に失敗したためテンプレ文を使います:', e);
-recordAiError(e);
-return fallback;
+// この試行は失敗。次の試行があればそちらへ進む
+lastError = e;
+console.warn(
+`[diary-ai] 生成試行が失敗しました（mode=${attempt.mode}）:`,
+e,
+);
 }
+}
+
+// 全試行が失敗 → 静かにテンプレへ落とす（アプリを壊さない）。
+// 理由は診断用に保持する（getLastAiError / __odekakeLastAiError）
+if (lastError) recordAiError(lastError);
+return fallback;
 }

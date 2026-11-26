@@ -63,6 +63,7 @@ await import('./card-generator.test.js');
 await import('./visit-property.test.js');
 await import('./odekake-code.test.js');
 await import('./diary-ai.test.js');
+await import('./memory.test.js');
 
 // describe の実行中に it がチェーンへ追加されるため、スナップショットを
 // 1回 await するだけでは取りこぼす。チェーンが伸びなくなるまで待つ。

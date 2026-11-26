@@ -246,6 +246,29 @@
         </button>
       </div><!-- /#care-actions -->
 
+      <!-- せいかく（経験で育つ）とおもいでの要約 -->
+      <section id="personality-panel" class="personality-panel" aria-label="せいかく">
+        <h2 class="personality-panel__title">🌱 せいかく</h2>
+        <p id="personality-words" class="personality-panel__words"></p>
+        <div id="personality-growth" class="personality-panel__growth"></div>
+        <p id="memory-summary" class="personality-panel__memory"></p>
+      </section>
+
+      <!-- AIとプライバシーの設定 -->
+      <section id="privacy-panel" class="privacy-panel" aria-label="AIとプライバシー">
+        <h2 class="privacy-panel__title">🔒 AIとプライバシー</h2>
+        <label class="privacy-panel__toggle">
+          <input type="checkbox" id="share-memory-toggle">
+          <span>おもいでをクラウドの日記にも使う</span>
+        </label>
+        <p class="privacy-panel__note">
+          オフのとき、おもいで（行き先や出来事の記録）は端末の中だけで
+          使われます。クラウドで日記を書くときは、今日の出来事だけが
+          送られます。オンにすると、クラウドの日記にもおもいでの
+          文脈が渡ります。
+        </p>
+      </section>
+
       <!-- おでかけボタン -->
       <button
         id="odekake-btn"
@@ -308,6 +331,9 @@
 
       <!-- リード文 -->
       <p class="odekake__lead">どこにいく？</p>
+
+      <!-- 記憶にもとづくおすすめ（JS で表示する。記憶が無ければ空） -->
+      <p id="odekake-memory-hint" class="odekake__memory-hint" aria-live="polite"></p>
 
       <!-- スポット一覧（spots.json をもとに JS で生成する） -->
       <div

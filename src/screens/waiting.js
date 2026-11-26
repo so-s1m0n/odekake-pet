@@ -17,7 +17,13 @@ import { isReturnReady, getVisitTiming, completeVisit } from '../domain/visit.js
 import { generateEvent } from '../domain/event-generator.js';
 import { loadSyntheticSpot } from '../domain/synthetic-spot.js';
 import { transitionPetState, PET_STATE } from '../domain/pet.js';
-import { loadPet, savePet, loadCurrentVisit, saveCurrentVisit } from '../store.js';
+import {
+  deriveMemory,
+  effectivePersonality,
+  experienceFromEvent,
+  applyExperience,
+} from '../domain/memory.js';
+import { loadPet, savePet, loadCurrentVisit, saveCurrentVisit, loadVisitsAll } from '../store.js';
 import { goHomecoming } from '../router.js';
 
 // ─────────────────────────────────────────────
@@ -265,9 +271,18 @@ function executeReturn(visit, spots) {
   const returningPet = transitionPetState(pet, PET_STATE.RETURNING);
   const homePet      = transitionPetState(returningPet, PET_STATE.HOME);
 
+  // 記憶が次の冒険に影響する:
+  //  - 出来事の条件判定には、経験で育った実効性格を使う
+  //  - 同じ場所で前回と同じ出来事は、候補が複数あれば避ける
+  const memory = deriveMemory(loadVisitsAll());
+  const grownPet = { ...pet, personality: effectivePersonality(pet) };
+
   // イベントを生成する（出発日時を渡して時間帯フィルタに使う）
   const departedAt = new Date(visit.departedAt);
-  const { eventId, eventText, souvenirId } = generateEvent(spot, pet, departedAt);
+  const { eventId, eventText, souvenirId } = generateEvent(
+    spot, grownPet, departedAt, '',
+    { avoidEventId: memory.lastEventBySpot[visit.spotId] ?? null },
+  );
 
   // 絵日記データを組み立てる（カード生成はM6で実装予定）
   const cardData = {
@@ -283,8 +298,12 @@ function executeReturn(visit, spots) {
   const completedVisit = completeVisit(visit, eventId, souvenirId ?? null, cardData);
   saveCurrentVisit(completedVisit);
 
-  // ペットの最終状態をストアに保存する
-  savePet(homePet);
+  // 旅の経験をペットに蓄積して保存する（性格の形成）
+  const experiencedPet = applyExperience(
+    homePet,
+    experienceFromEvent(spot, eventId, souvenirId ?? null),
+  );
+  savePet(experiencedPet);
 
   // タイマーを停止してから帰宅画面へ遷移する
   stopWaitingTimer();

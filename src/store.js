@@ -4,12 +4,14 @@
  * このファイル以外のモジュールは localStorage に直接アクセスしない。
  */
 
+import { normalizeExperience } from './domain/memory.js';
+
 // ─────────────────────────────────────────────
 // 定数
 // ─────────────────────────────────────────────
 
 /** 現在のデータスキーマバージョン */
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 /** localStorageキーの一覧 */
 const KEYS = {
@@ -17,7 +19,18 @@ const KEYS = {
   VISIT_CURRENT:  'odekakepet::visit::current',  // 進行中のVisit（1件のみ）
   VISITS_ALL:     'odekakepet::visits::all',      // 完了済みVisitの履歴（配列）
   FOOTPRINTS_ALL: 'odekakepet::footprints::all',  // 足跡（来訪）記録の履歴（配列）
+  APP_SETTINGS:   'odekakepet::settings::app',    // アプリ設定（AI許可など）
   SCHEMA_VERSION: 'odekakepet::settings::version',
+};
+
+/**
+ * アプリ設定の既定値。
+ * shareMemoryWithCloud: おもいで（記憶の要約）をクラウド日記の生成に
+ * 使ってよいか。既定は false（おもいでは端末の中だけで使う。
+ * diary-ai の planDiaryAttempts を参照）。
+ */
+export const DEFAULT_SETTINGS = {
+  shareMemoryWithCloud: false,
 };
 
 // ─────────────────────────────────────────────
@@ -45,7 +58,23 @@ export function migrate() {
       // v2 → v3: 足跡（来訪）記録キーを初期化する
       migrate_v2_to_v3();
     }
+    if (storedVersion < 4) {
+      // v3 → v4: アプリ設定キーを初期化する（既存データには触れない）
+      migrate_v3_to_v4();
+    }
     localStorage.setItem(KEYS.SCHEMA_VERSION, String(SCHEMA_VERSION));
+  }
+}
+
+/**
+ * スキーマ v3 → v4 のマイグレーション。
+ * アプリ設定キーが存在しなければ既定値で初期化する。
+ * ペットの experience フィールドは loadPet 側で正規化するため、
+ * ここでは既存のペットデータには触れない。
+ */
+function migrate_v3_to_v4() {
+  if (localStorage.getItem(KEYS.APP_SETTINGS) === null) {
+    localStorage.setItem(KEYS.APP_SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
   }
 }
 
@@ -93,6 +122,8 @@ export function loadPet() {
     const data = JSON.parse(json);
     // schemaVersionフィールドを除いたPetオブジェクトを返す
     const { schemaVersion: _sv, ...pet } = data;
+    // v4 以前のセーブには experience が無いため、読み込み時に正規化する
+    pet.experience = normalizeExperience(pet.experience);
     return pet;
   } catch (e) {
     console.error('[store] ペットデータの読み込みに失敗しました:', e);
@@ -244,5 +275,46 @@ export function appendFootprint(record) {
     localStorage.setItem(KEYS.FOOTPRINTS_ALL, JSON.stringify(all));
   } catch (e) {
     console.error('[store] 足跡記録への追記に失敗しました:', e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// アプリ設定の読み書き（v4）
+// ─────────────────────────────────────────────
+
+/**
+ * アプリ設定を読み込む。存在しない・壊れている場合は既定値を返す。
+ * 既知のキーだけを既定値とマージして返す（未知のキーは落とす）。
+ *
+ * @returns {{ shareMemoryWithCloud: boolean }}
+ */
+export function loadSettings() {
+  try {
+    const json = localStorage.getItem(KEYS.APP_SETTINGS);
+    if (!json) return { ...DEFAULT_SETTINGS };
+    const data = JSON.parse(json);
+    return {
+      shareMemoryWithCloud:
+        typeof data?.shareMemoryWithCloud === 'boolean'
+          ? data.shareMemoryWithCloud
+          : DEFAULT_SETTINGS.shareMemoryWithCloud,
+    };
+  } catch (e) {
+    console.error('[store] アプリ設定の読み込みに失敗しました:', e);
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+/**
+ * アプリ設定を保存する。
+ *
+ * @param {{ shareMemoryWithCloud: boolean }} settings
+ */
+export function saveSettings(settings) {
+  try {
+    const merged = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+    localStorage.setItem(KEYS.APP_SETTINGS, JSON.stringify(merged));
+  } catch (e) {
+    console.error('[store] アプリ設定の保存に失敗しました:', e);
   }
 }

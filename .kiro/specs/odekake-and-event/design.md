@@ -29,7 +29,7 @@ router.js の `SCREEN_IDS` リストと index.html の `<section>` に3画面を
 │  どこにいく？                    │
 │                                 │
 │  ┌───────────────────────────┐  │
-│  │  ★ 星屑工房               │  │  ← スポットカード（radio的なUI）
+│  │  ★ 月夜の小屋               │  │  ← スポットカード（radio的なUI）
 │  │  星のかけらが集まる不思議な工房│  │
 │  └───────────────────────────┘  │
 │  ┌───────────────────────────┐  │
@@ -86,7 +86,7 @@ router.js の `SCREEN_IDS` リストと index.html の `<section>` に3画面を
 │   └──────────────────────┘      │
 │                                 │
 │   ○○ちゃんは                    │
-│   ★星屑工房 を訪問中...          │
+│   ★月夜の小屋 を訪問中...          │
 │                                 │
 │   出発から: 01:23                │  ← 経過時間（MM:SS）
 │   帰宅予定: あと 08:37           │  ← 残り時間
@@ -145,7 +145,7 @@ router.js の `SCREEN_IDS` リストと index.html の `<section>` に3画面を
 │      ○○ちゃん が帰ってきたよ      │
 │                                 │
 │   ──── 今日の出来事 ────          │
-│   ✦ 星屑工房で...                │
+│   ✦ 月夜の小屋で...                │
 │   工房の棚の隙間に星のかけらを     │
 │   みつけた。きらきらしていた。     │
 │                                 │
@@ -221,7 +221,7 @@ router.js の `SCREEN_IDS` リストと index.html の `<section>` に3画面を
 /**
  * @typedef {Object} SpotDef
  * @property {string}          id          - スポットID（例: 'hoshikuzu-kobo'）
- * @property {string}          displayName - 表示名（例: '星屑工房'）
+ * @property {string}          displayName - 表示名（例: '月夜の小屋'）
  * @property {string}          description - 短い説明文
  * @property {string}          themeColor  - テーマカラー（CSSカスタムプロパティ用 hex）
  * @property {string}          icon        - 絵文字アイコン

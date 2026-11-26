@@ -122,3 +122,23 @@
   color: var(--color-text-sub);
   line-height: 1.4;
 }
+
+/* ─────────────────────────────────────────────
+   記憶にもとづくおすすめ文とスポットの記憶バッジ
+   ───────────────────────────────────────────── */
+
+.odekake__memory-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-sub);
+  margin: 0 0 var(--space-3);
+}
+
+.odekake__memory-hint:empty {
+  display: none;
+}
+
+.spot-card__badge {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  margin: var(--space-1) 0 0;
+}
