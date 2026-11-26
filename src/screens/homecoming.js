@@ -18,7 +18,12 @@
 import { appendVisit, clearCurrentVisit, loadPet } from '../store.js';
 import { goHome } from '../router.js';
 import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
-import { generateDiaryText, INFERENCE_SOURCE } from '../ai/diary-ai.js';
+import {
+  generateDiaryText,
+  INFERENCE_SOURCE,
+  getLastAiError,
+  clearAiError,
+} from '../ai/diary-ai.js';
 import { encodeFootprintCode } from '../domain/odekake-code.js';
 import { clearSyntheticSpot } from '../domain/synthetic-spot.js';
 
@@ -53,6 +58,10 @@ export function initHomecomingScreen(visit, spots) {
 
   // 結果を描画する
   renderEventResult(visit, spots);
+
+  // 前の Visit の失敗理由が残らないよう、AI日記の診断表示を初期化する
+  clearAiError();
+  renderAiDiagnostics();
 
   // 前の Visit のカードが残らないよう、プレビューを隠して保存ボタンを無効化する
   const previewArea = document.getElementById('card-preview-area');
@@ -391,6 +400,8 @@ async function buildDiaryCardData(spot) {
     };
 
     const diary = await generateDiaryText(facts, cardData.eventText);
+    // 診断表示を最新の失敗理由に合わせる（成功時は隠れる）
+    renderAiDiagnostics();
     if (diary.source === INFERENCE_SOURCE.TEMPLATE) {
       // AI が使えなかった → テンプレ文のまま（従来動作）
       return cardData;
@@ -409,6 +420,36 @@ async function buildDiaryCardData(spot) {
       makeCardBtn.textContent = originalLabel;
     }
   }
+}
+
+/**
+ * AI日記の診断表示を更新する（#BuildHybridAI の失敗切り分け用）。
+ *
+ * 生成がテンプレートに落ちたときだけ、diary-ai が保持した失敗理由の
+ * 概要を画面下部の #ai-diagnostics に小さく出す。AI で書けたとき・
+ * 理由が無いときは隠す。
+ *
+ * 【提出前に外す対象】診断表示の置き場所はこの関数と index.html の
+ * #ai-diagnostics 要素、homecoming.css の .ai-diagnostics の3か所だけ。
+ * 外すときはこの関数と呼び出し2か所（init / buildDiaryCardData）も消す。
+ */
+function renderAiDiagnostics() {
+  const el = document.getElementById('ai-diagnostics');
+  if (!el) return;
+  const error = getLastAiError();
+  if (!error) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  const parts = [`AI日記: ${error.name}`];
+  if (error.code) parts.push(`code=${error.code}`);
+  if (error.status !== null && error.status !== undefined) {
+    parts.push(`status=${error.status}`);
+  }
+  if (error.message) parts.push(error.message);
+  el.textContent = parts.join(' / ');
+  el.hidden = false;
 }
 
 /**

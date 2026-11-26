@@ -142,3 +142,21 @@
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
 }
+
+/* ─────────────────────────────────────────────
+   AI日記 診断表示（#BuildHybridAI の失敗切り分け用。提出前に削除する）
+   ───────────────────────────────────────────── */
+
+/* 生成がテンプレに落ちたときだけ、失敗理由の概要を画面下部に小さく出す */
+.ai-diagnostics {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  word-break: break-all;
+  margin-top: var(--space-4);
+}
+
+/* hidden 属性つきのときは非表示にする */
+.ai-diagnostics[hidden] {
+  display: none;
+}

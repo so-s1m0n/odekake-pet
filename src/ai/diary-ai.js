@@ -32,6 +32,13 @@
 * テスト方針: ネットワーク依存の本体（generateDiaryText の実呼び出し）は
 * 対象外とし、プロンプト組み立て・整形・フォールバック判定などの
 * 純粋関数を単体テストする。
+*
+* 診断（2026-11-26）: 生成は失敗を握りつぶしてテンプレへ落とす設計の
+* ため、失敗理由が外から読めなかった。切り分け用に、直近の失敗理由を
+* summarizeAiError で要約して保持し、getLastAiError() と
+* window.__odekakeLastAiError の両方から読めるようにした。帰宅画面は
+* これを小さく表示する（表示側は homecoming.js の renderAiDiagnostics
+* の1か所のみ。コンテスト提出前に表示ごと外す想定）。
 */
 
 // ─────────────────────────────────────────────
@@ -268,6 +275,75 @@ return { text, source: candidate.source};
 return null;
 }
 
+/** 失敗理由の message を表示用に切り詰める上限 */
+const MAX_ERROR_MESSAGE_LENGTH = 200;
+
+/**
+* AI 生成の失敗理由を、画面表示・検証用に要約する。
+* Firebase のエラーは name（'FirebaseError' 等）・message・code
+* （'ai/...' 等）を持つことがある。取れる範囲だけを拾い、
+* message は表示用に切り詰める。エラーでない値でも例外にしない。
+*
+* @param {*} error - 捕まえた値
+* @returns {{ name: string, message: string, code: string|null,
+* status: string|number|null, at: string }}
+*/
+export function summarizeAiError(error) {
+const pick = value => (typeof value === 'string' && value.length > 0? value: null);
+const name = pick(error?.name)?? 'UnknownError';
+let message = pick(error?.message)?? (typeof error === 'string'? error: '');
+if (message.length > MAX_ERROR_MESSAGE_LENGTH) {
+message = `${message.slice(0, MAX_ERROR_MESSAGE_LENGTH)}…`;
+}
+const rawStatus = error?.status;
+const status = typeof rawStatus === 'number'
+|| (typeof rawStatus === 'string' && rawStatus.length > 0)
+? rawStatus
+: null;
+return {
+name,
+message,
+code: pick(error?.code),
+status,
+at: new Date().toISOString(),
+};
+}
+
+// ─────────────────────────────────────────────
+// 失敗理由の保持（診断用）
+// ─────────────────────────────────────────────
+
+/** 直近の AI 生成の失敗理由（要約済み）。失敗が無ければ null */
+let lastAiError = null;
+
+/**
+* 直近の失敗理由を返す（診断表示・ブラウザ検証用）。
+*
+* @returns {object|null} summarizeAiError の戻り値、または null
+*/
+export function getLastAiError() {
+return lastAiError;
+}
+
+/**
+* 失敗理由を保持する。あわせて window.__odekakeLastAiError にも
+* 同じ内容を置き、ブラウザ検証でコンソールから読み取れるようにする。
+*
+* @param {*} error - 捕まえたエラー（要約前の生の値でよい）
+* @returns {object} 保持した要約
+*/
+export function recordAiError(error) {
+lastAiError = summarizeAiError(error);
+globalThis.__odekakeLastAiError = lastAiError;
+return lastAiError;
+}
+
+/** 保持中の失敗理由を消す（生成の試行開始時と画面初期化時に呼ぶ） */
+export function clearAiError() {
+lastAiError = null;
+globalThis.__odekakeLastAiError = null;
+}
+
 // ─────────────────────────────────────────────
 // 生成本体（ネットワーク依存）
 // ─────────────────────────────────────────────
@@ -407,8 +483,17 @@ inferenceSource: result.response.inferenceSource,
 export async function generateDiaryText(facts, templateText) {
 const fallback = { text: templateText, source: INFERENCE_SOURCE.TEMPLATE};
 
+// 前回の失敗理由が残らないよう、試行のたびに消してから始める
+clearAiError();
+
 // 未設定なら SDK を読み込まず即テンプレ（公開版と同一動作）
-if (!isFirebaseConfigured()) return fallback;
+if (!isFirebaseConfigured()) {
+recordAiError({
+name: 'NotConfiguredError',
+message: 'Firebase が未設定のため AI 生成を試行できませんでした',
+});
+return fallback;
+}
 
 try {
 const raw = await generateWithFirebase(buildDiaryPrompt(facts));
@@ -418,10 +503,20 @@ const raw = await generateWithFirebase(buildDiaryPrompt(facts));
 const source = normalizeInferenceSource(raw.inferenceSource)
 ?? INFERENCE_SOURCE.CLOUD;
 const picked = pickDiaryResult([{ source, text: raw.text}]);
-return picked?? fallback;
+if (!picked) {
+// 生成は返ったが出力が日記文として使えなかった（理由の保持用）
+recordAiError({
+name: 'EmptyResultError',
+message: 'AI の出力が日記文として使えませんでした',
+});
+return fallback;
+}
+return picked;
 } catch (e) {
-// 失敗は静かにテンプレへ落とす（アプリを壊さない）
+// 失敗は静かにテンプレへ落とす（アプリを壊さない）。
+// 理由は診断用に保持する（getLastAiError / __odekakeLastAiError）
 console.warn('[diary-ai] AI生成に失敗したためテンプレ文を使います:', e);
+recordAiError(e);
 return fallback;
 }
 }

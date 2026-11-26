@@ -18,6 +18,10 @@ import {
   normalizeInferenceSource,
   pickDiaryResult,
   createDeviceModelInitializer,
+  summarizeAiError,
+  recordAiError,
+  getLastAiError,
+  clearAiError,
   MAX_DIARY_LENGTH,
 } from '../src/ai/diary-ai.js';
 
@@ -315,5 +319,73 @@ describe('createDeviceModelInitializer', () => {
     createDeviceModelInitializer()(fakeModel);
     createDeviceModelInitializer()(fakeModel);
     assert.equal(calls, 2, '独立した初期化はそれぞれ1回ずつ');
+  });
+});
+
+// ─── summarizeAiError（診断用） ──────────────────────────────────────────────
+
+describe('summarizeAiError', () => {
+  it('Error から name と message を拾い、code/status は null', () => {
+    const summary = summarizeAiError(new Error('AI生成がタイムアウトしました'));
+    assert.equal(summary.name, 'Error', 'name が拾える');
+    assert.equal(summary.message, 'AI生成がタイムアウトしました', 'message が拾える');
+    assert.equal(summary.code, null, 'code が無ければ null');
+    assert.equal(summary.status, null, 'status が無ければ null');
+    assert.equal(typeof summary.at, 'string', '発生時刻（ISO文字列）が付く');
+  });
+
+  it('Firebase 形式の code を拾う', () => {
+    const summary = summarizeAiError({
+      name: 'FirebaseError',
+      message: 'permission denied',
+      code: 'ai/permission-denied',
+    });
+    assert.equal(summary.name, 'FirebaseError', 'name が拾える');
+    assert.equal(summary.code, 'ai/permission-denied', 'code が拾える');
+  });
+
+  it('status を数値・文字列のどちらでも拾う', () => {
+    assert.equal(summarizeAiError({ status: 403 }).status, 403, '数値の status');
+    assert.equal(summarizeAiError({ status: 'PERMISSION_DENIED' }).status, 'PERMISSION_DENIED', '文字列の status');
+    assert.equal(summarizeAiError({ status: '' }).status, null, '空文字列の status は null');
+  });
+
+  it('エラーでない値でも例外にならず既定の形になる', () => {
+    assert.equal(summarizeAiError(null).name, 'UnknownError', 'null は UnknownError');
+    assert.equal(summarizeAiError(undefined).name, 'UnknownError', 'undefined は UnknownError');
+    assert.equal(summarizeAiError(42).name, 'UnknownError', '数値は UnknownError');
+    const fromString = summarizeAiError('そのままの文字列エラー');
+    assert.equal(fromString.name, 'UnknownError', '文字列は UnknownError');
+    assert.equal(fromString.message, 'そのままの文字列エラー', '文字列は message に入る');
+  });
+
+  it('長い message は切り詰められる', () => {
+    const summary = summarizeAiError(new Error('あ'.repeat(500)));
+    assert.ok(summary.message.length <= 201, '上限（200文字＋省略記号）以内に収まる');
+    assert.ok(summary.message.endsWith('…'), '省略記号が付く');
+  });
+});
+
+// ─── 失敗理由の保持（診断用） ────────────────────────────────────────────────
+
+describe('AI 失敗理由の保持', () => {
+  it('recordAiError で保持され getLastAiError で要約が読める', () => {
+    clearAiError();
+    const kept = recordAiError({ name: 'FirebaseError', message: 'denied', code: 'ai/x' });
+    assert.equal(getLastAiError(), kept, '保持した要約がそのまま返る');
+    assert.equal(getLastAiError().code, 'ai/x', '要約済みの内容が読める');
+  });
+
+  it('window グローバル（__odekakeLastAiError）にも同じ内容が置かれる', () => {
+    const kept = recordAiError(new Error('global check'));
+    assert.equal(globalThis.__odekakeLastAiError, kept, 'グローバルにも同じ要約が置かれる');
+    assert.equal(globalThis.__odekakeLastAiError.message, 'global check', '内容が読める');
+  });
+
+  it('clearAiError で保持とグローバルの両方が消える', () => {
+    recordAiError(new Error('to be cleared'));
+    clearAiError();
+    assert.equal(getLastAiError(), null, '保持が消える');
+    assert.equal(globalThis.__odekakeLastAiError, null, 'グローバルも消える');
   });
 });
