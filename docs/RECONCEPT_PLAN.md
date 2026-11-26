@@ -20,16 +20,20 @@
 ### Kiroween 2026（Devpost）
 
 - 締切: 2026-12-04 14:00 PT = **2026-12-05 07:00 JST**（当初情報と一致）
-- Resurrection 部門が存在する（Best Resurrection App $7,500）
-- Kiro の使用が必須。リポジトリ直下に `.kiro` ディレクトリを含めること、
-  Kiro の使い方の記述が提出要件
-- 審査: Stage 1（要件チェック）→ Stage 2 は Application Quality /
-  Kiro Implementation / Idea Quality（各 1–5 点）
-- 動画: 3分以内（超過分は冒頭3分のみ評価）、対象プラットフォームで
-  実際に動く様子、YouTube / Vimeo 公開
-- 事前制作: 可。ただし既存コードの使用は開示が必要で、大会期間中の
-  実質的な新規作業が求められる
-- 出典: https://kiroween.devpost.com/ 、同 /rules
+- Resurrection 部門が存在する（Category 賞は各 $5,000。賞金総額
+  $100,000、Overall 1位 $30,000、Best Demo $1,000 ほか）
+- Kiro の使用が必須。リポジトリ直下に `.kiro` ディレクトリを含めること
+  （.gitignore 不可）、Kiro の使い方の write-up が提出要件
+- 審査: Stage 1（テーマ適合＋必須ツールの合理的利用の pass/fail）→
+  Stage 2 は Potential Impact / Technological Implementation /
+  Design / Innovation-Idea / Presentation の5基準・各20%・各10点
+- 動画: 3分未満であるべき（超過分は審査員が見る義務なし）、
+  対象デバイスで実際に動く様子、YouTube 公開が必須
+- 事前制作: 「New Projects Only」。プロジェクトは提出期間開始
+  （2026-10-30）以降に新規作成されたものでなければならない。
+  本プロジェクトは 2026-10-31 作成のため、この要件は満たす。
+  既存コードを取り込む場合は開示義務あり
+- 出典: https://kiroween.devpost.com/ 、同 /rules（2026-11-26 に全文確認）
 
 ### #BuildHybridAI 2026（Devpost、主催 Google / Firebase）
 
@@ -50,13 +54,16 @@
 ### 同一プロジェクトの両大会への提出
 
 - **両大会の公式ルール本文に、同一プロジェクトを他の大会へ提出する
-  ことを禁じる条項は見当たらなかった。**
-- 条件は「新規性」の扱い: Kiroween は既存コードの開示＋期間中の
-  実質的な新規作業、BuildHybridAI は期間中の大幅な更新＋要約の提出。
-  今回の記憶システムの実装（後述）は両方の「期間中の新規作業」に
-  正面から該当する
-- 注意: Devpost の汎用利用規約はページ描画の都合で全文を確認できて
-  いない。提出操作の直前に、汎用規約側の最終確認を推奨する
+  ことを禁じる条項は見当たらなかった。** Kiroween は公式ルール全文
+  （621行）で "other competitions" / "simultaneous submission" 相当の
+  文言まで確認済み。BuildHybridAI も公式ルール・FAQ の確認範囲で
+  禁止条項なし。ただし、どちらも「許可する」積極的な明文保証までは
+  ない、というのが正確なところ
+- 条件は「新規性」の扱い: Kiroween は 2026-10-30 以降の新規作成が
+  要件（本プロジェクトは 10-31 作成で適合）＋既存コード取り込み時の
+  開示。BuildHybridAI は期間中の大幅な更新＋要約の提出。
+  今回の記憶システムの実装（後述）は BuildHybridAI の「期間中の
+  大幅な更新」に正面から該当する
 
 ## 3. 既存サービスとの差別化
 
