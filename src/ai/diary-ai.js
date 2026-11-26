@@ -101,7 +101,21 @@ const FIREBASE_SDK_VERSION = '12.5.0';
 /** CDN のベース URL */
 const FIREBASE_CDN_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}`;
 
-/** クラウド側モデル名（オンデバイス不可時のフォールバック先） */
+/**
+ * クラウド側モデル名（オンデバイス不可時のフォールバック先）。
+ *
+ * 注意: ハイブリッド（mode 指定）では、getGenerativeModel のトップレベル
+ * model はクラウド推論に使われない。クラウド側モデルは inCloudParams で
+ * 指定するのが公式仕様（Firebase AI Logic「Configuration options for
+ * hybrid experiences」の "Override the default fallback model"）。
+ * 未指定だと SDK（v12.5.0）の既定値 gemini-2.0-flash-lite が使われる。
+ * 同モデルは提供終了しており、2026-11-26 の実機確認で 404 になった
+ * （診断表示で判明）。このため inCloudParams へ明示指定する。
+ *
+ * gemini-2.5-flash は Gemini Developer API バックエンドで現行利用可
+ * （公式モデル一覧で確認。2026-12-01 以降はリクエストが
+ * gemini-3.5-flash-lite へ自動ルーティングされる）。
+ */
 const CLOUD_MODEL_NAME = 'gemini-2.5-flash';
 
 /** 生成のタイムアウト（ミリ秒）。超えたらテンプレへ落ちる */
@@ -442,8 +456,14 @@ await initAppCheck(app);
 const ai = aiModule.getAI(app, { backend: new aiModule.GoogleAIBackend()});
 
 cachedModel = aiModule.getGenerativeModel(ai, {
+// オンデバイス指定（prefer_on_device）は従来どおり
 mode: 'prefer_on_device',
 model: CLOUD_MODEL_NAME,
+// ハイブリッドではクラウド側モデルは inCloudParams で指定する
+// （トップレベル model はクラウド推論に使われない。未指定だと SDK の
+// 既定モデル gemini-2.0-flash-lite になり、提供終了で 404 になる。
+// CLOUD_MODEL_NAME のコメントと devlog 2026-11-26 を参照）
+inCloudParams: { model: CLOUD_MODEL_NAME },
 });
 return cachedModel;
 }
