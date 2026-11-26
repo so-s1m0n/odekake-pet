@@ -19,8 +19,8 @@ import { appendVisit, clearCurrentVisit, loadPet } from '../store.js';
 import { goHome } from '../router.js';
 import { generateCard, downloadCardAsPng } from '../domain/card-generator.js';
 import { generateDiaryText, INFERENCE_SOURCE } from '../ai/diary-ai.js';
-// 診断専用の追加エクスポート（getLastAiError / clearAiError）は名前空間経由で
-// 任意アクセスする。名前付き import で静的に束縛すると、デプロイ直後に
+// diary-ai のエラー保持まわりの追加エクスポート（clearAiError）は名前空間
+// 経由で任意アクセスする。名前付き import で静的に束縛すると、デプロイ直後に
 // CDN 側で新旧ファイルが混在した瞬間、旧 diary-ai.js に無いエクスポートを
 // 参照してモジュール全体のリンクが失敗し、アプリが起動しなくなる
 // （2026-11-26 の真っ白障害の再発防止。詳細は devlog）。
@@ -60,9 +60,8 @@ export function initHomecomingScreen(visit, spots) {
   // 結果を描画する
   renderEventResult(visit, spots);
 
-  // 前の Visit の失敗理由が残らないよう、AI日記の診断表示を初期化する
+  // 前の Visit の失敗理由が残らないよう、diary-ai のエラー保持を初期化する
   safeClearAiError();
-  renderAiDiagnostics();
 
   // 前の Visit のカードが残らないよう、プレビューを隠して保存ボタンを無効化する
   const previewArea = document.getElementById('card-preview-area');
@@ -401,8 +400,6 @@ async function buildDiaryCardData(spot) {
     };
 
     const diary = await generateDiaryText(facts, cardData.eventText);
-    // 診断表示を最新の失敗理由に合わせる（成功時は隠れる）
-    renderAiDiagnostics();
     if (diary.source === INFERENCE_SOURCE.TEMPLATE) {
       // AI が使えなかった → テンプレ文のまま（従来動作）
       return cardData;
@@ -424,54 +421,16 @@ async function buildDiaryCardData(spot) {
 }
 
 /**
- * AI日記の診断表示を更新する（#BuildHybridAI の失敗切り分け用）。
- *
- * 生成がテンプレートに落ちたときだけ、diary-ai が保持した失敗理由の
- * 概要を画面下部の #ai-diagnostics に小さく出す。AI で書けたとき・
- * 理由が無いときは隠す。
- *
- * 【提出前に外す対象】診断表示の置き場所はこの関数と index.html の
- * #ai-diagnostics 要素、homecoming.css の .ai-diagnostics の3か所だけ。
- * 外すときはこの関数と呼び出し2か所（init / buildDiaryCardData）も消す。
+ * diary-ai が保持した失敗理由を安全に消す。
+ * 名前空間 import＋任意アクセスにし、diary-ai.js 側に該当エクスポートが
+ * 無い新旧混在状態でも例外にしない（2026-11-26 の真っ白障害の再発防止）。
  */
-/**
- * 診断用の失敗理由を安全に取得する（診断側の都合で画面を壊さない）。
- * diary-ai.js 側に該当エクスポートが無い混在状態でも例外にしない。
- */
-function safeGetLastAiError() {
-  try {
-    return diaryAi.getLastAiError?.() ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** 診断用の失敗理由を安全に消す（同上） */
 function safeClearAiError() {
   try {
     diaryAi.clearAiError?.();
   } catch {
-    // 診断は任意機能のため、失敗しても無視する
+    // エラー保持は補助機能のため、失敗しても無視する
   }
-}
-
-function renderAiDiagnostics() {
-  const el = document.getElementById('ai-diagnostics');
-  if (!el) return;
-  const error = safeGetLastAiError();
-  if (!error) {
-    el.hidden = true;
-    el.textContent = '';
-    return;
-  }
-  const parts = [`AI日記: ${error.name}`];
-  if (error.code) parts.push(`code=${error.code}`);
-  if (error.status !== null && error.status !== undefined) {
-    parts.push(`status=${error.status}`);
-  }
-  if (error.message) parts.push(error.message);
-  el.textContent = parts.join(' / ');
-  el.hidden = false;
 }
 
 /**
