@@ -112,11 +112,19 @@ const FIREBASE_CDN_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER
  * 同モデルは提供終了しており、2026-11-26 の実機確認で 404 になった
  * （診断表示で判明）。このため inCloudParams へ明示指定する。
  *
- * gemini-2.5-flash は Gemini Developer API バックエンドで現行利用可
- * （公式モデル一覧で確認。2026-12-01 以降はリクエストが
- * gemini-3.5-flash-lite へ自動ルーティングされる）。
+ * gemini-2.5-flash は公式モデル一覧では「2026-12-01 から
+ * gemini-3.5-flash-lite へ自動ルーティング、置き換え先は同モデル」と
+ * されていたが、2026-11-26 の実機確認では 404
+ * （"This model models/gemini-2.5-flash is no longer available to…"、
+ * 新規プロジェクトでは利用不可とみられる）になった。
+ * このため、公式モデル一覧（firebase.google.com/docs/ai-logic/models、
+ * 2026-11-26 確認）で Stable・ルーティング／終了注記なし・
+ * Blaze 課金要件なしの現行標準として載っている
+ * gemini-3.8-flash（2026-09-02 リリース）を指定する。
+ * 3.7／3.6／3.5 の各 Flash と 2.5 Pro の「Replacement」先にも
+ * gemini-3.8-flash が挙げられている。
  */
-const CLOUD_MODEL_NAME = 'gemini-2.5-flash';
+const CLOUD_MODEL_NAME = 'gemini-3.8-flash';
 
 /** 生成のタイムアウト（ミリ秒）。超えたらテンプレへ落ちる */
 const GENERATION_TIMEOUT_MS = 20_000;
@@ -290,7 +298,7 @@ return null;
 }
 
 /** 失敗理由の message を表示用に切り詰める上限 */
-const MAX_ERROR_MESSAGE_LENGTH = 200;
+const MAX_ERROR_MESSAGE_LENGTH = 1000;
 
 /**
 * AI 生成の失敗理由を、画面表示・検証用に要約する。

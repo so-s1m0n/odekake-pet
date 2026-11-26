@@ -360,9 +360,14 @@ describe('summarizeAiError', () => {
   });
 
   it('長い message は切り詰められる', () => {
-    const summary = summarizeAiError(new Error('あ'.repeat(500)));
-    assert.ok(summary.message.length <= 201, '上限（200文字＋省略記号）以内に収まる');
+    const summary = summarizeAiError(new Error('あ'.repeat(1500)));
+    assert.ok(summary.message.length <= 1001, '上限（1000文字＋省略記号）以内に収まる');
     assert.ok(summary.message.endsWith('…'), '省略記号が付く');
+  });
+
+  it('1000文字以内の message は全文が残る', () => {
+    const summary = summarizeAiError(new Error('あ'.repeat(500)));
+    assert.equal(summary.message.length, 500, '切り詰められず全文が残る');
   });
 });
 
