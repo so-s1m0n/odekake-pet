@@ -17,6 +17,7 @@ import {
   cleanDiaryText,
   normalizeInferenceSource,
   pickDiaryResult,
+  createDeviceModelInitializer,
   MAX_DIARY_LENGTH,
 } from '../src/ai/diary-ai.js';
 
@@ -276,5 +277,43 @@ describe('badgeLabelFor', () => {
     assert.equal(badgeLabelFor(undefined), null, 'undefined は null');
     assert.equal(badgeLabelFor(null), null, 'null は null');
     assert.equal(badgeLabelFor('unknown'), null, '未知の値は null');
+  });
+});
+
+// ─── createDeviceModelInitializer ────────────────────────────────────────────
+
+describe('createDeviceModelInitializer', () => {
+  it('initializeDeviceModel は複数回呼んでも1回だけ実行される', () => {
+    const ensure = createDeviceModelInitializer();
+    let calls = 0;
+    const fakeModel = {
+      initializeDeviceModel: () => {
+        calls++;
+        return Promise.resolve();
+      },
+    };
+    ensure(fakeModel);
+    ensure(fakeModel);
+    assert.equal(calls, 1, '初期化は1回だけ');
+  });
+
+  it('initializeDeviceModel を持たないモデルでも例外にならない', () => {
+    const ensure = createDeviceModelInitializer();
+    ensure({});
+    ensure(null);
+    ensure(undefined);
+  });
+
+  it('ファクトリが違えば初期化も別々に走る', () => {
+    let calls = 0;
+    const fakeModel = {
+      initializeDeviceModel: () => {
+        calls++;
+        return Promise.resolve();
+      },
+    };
+    createDeviceModelInitializer()(fakeModel);
+    createDeviceModelInitializer()(fakeModel);
+    assert.equal(calls, 2, '独立した初期化はそれぞれ1回ずつ');
   });
 });

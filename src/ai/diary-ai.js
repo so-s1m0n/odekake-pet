@@ -15,6 +15,11 @@
 * テンプレート文（cardData.eventText）をそのまま使う。
 * アプリは AI の状態によらず決して壊れない。
 *
+* ハイブリッド手順（公式 get-started Step 6）: generateContent() の前に、
+* ユーザー操作のタイミングで model.initializeDeviceModel() を呼ぶことが
+* 必須とされている。generateWithFirebase 内で1回だけ・失敗しても生成を
+* 継続する形で呼ぶ（createDeviceModelInitializer を参照）。
+*
 * Firebase 実接続は 2026-11-24 に完了（プロジェクト odekake-pet）。
 * FIREBASE_CONFIG が未設定（空）の間は isFirebaseConfigured() が false に
 * なり、SDK を読み込まず即テンプレに落ちる。設定済みの今も、生成失敗・
@@ -271,6 +276,53 @@ return null;
 let cachedModel = null;
 
 /**
+* デバイスモデル初期化の「1回だけ実行」を担う関数を作る。
+*
+* 公式ハイブリッド手順（get-started Step 6）では、generateContent() の
+* 前に、ユーザー操作（ボタンクリック）のタイミングで
+* model.initializeDeviceModel() を呼ぶことが必須とされている。
+* 初期化はモデルごとに1回で十分なため、初回の呼び出し結果（Promise）を
+* 保持して使い回す。
+*
+* 失敗しても例外は投げない: オンデバイスが使えない環境では
+* prefer_on_device の呼び出し自体がクラウドへ自動フォールバックする
+* ため、初期化の失敗・タイムアウトは警告に留めて生成を継続する。
+* メソッドを持たないモデル（旧 SDK 等）では何もしない。
+*
+* @returns {(model: object) => Promise<void>} 初期化を保証する関数
+*/
+export function createDeviceModelInitializer() {
+let initPromise = null;
+return function ensureDeviceModelInitialized(model) {
+if (!initPromise) {
+initPromise = (async () => {
+if (typeof model?.initializeDeviceModel!== 'function') return;
+let timer = null;
+try {
+await Promise.race([
+model.initializeDeviceModel(),
+new Promise((_, reject) => {
+timer = setTimeout(
+() => reject(new Error('デバイスモデルの初期化がタイムアウトしました')),
+GENERATION_TIMEOUT_MS,
+);
+}),
+]);
+} catch (e) {
+console.warn('[diary-ai] デバイスモデルの初期化に失敗しました（生成は継続します）:', e);
+} finally {
+if (timer!== null) clearTimeout(timer);
+}
+})();
+}
+return initPromise;
+};
+}
+
+/** デバイスモデル初期化の実体（アプリ全体で1回だけ試みる） */
+const ensureDeviceModelInitialized = createDeviceModelInitializer();
+
+/**
 * App Check をデバッグプロバイダで初期化する（ベストエフォート）。
 * デバッグトークンのグローバル設定 → firebase-app-check.js の読み込み
 * → initializeAppCheck の順。初期化に失敗しても例外は投げない
@@ -329,6 +381,9 @@ return cachedModel;
 */
 async function generateWithFirebase(prompt) {
 const model = await loadFirebaseModel();
+// 公式ハイブリッド手順 Step 6: 生成の前にデバイスモデルを初期化する
+// （1回だけ・失敗しても生成は継続する）
+await ensureDeviceModelInitialized(model);
 const timeout = new Promise((_, reject) => {
 setTimeout(() => reject(new Error('AI生成がタイムアウトしました')), GENERATION_TIMEOUT_MS);
 });
