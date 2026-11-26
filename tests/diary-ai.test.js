@@ -26,6 +26,11 @@ import {
   attemptWithRetry,
   RETRY_DELAYS_MS,
   MAX_GENERATION_ATTEMPTS,
+  PER_ATTEMPT_TIMEOUT_MS,
+  OVERALL_GENERATION_TIMEOUT_MS,
+  attemptTimeoutMs,
+  createGenerationTimeoutError,
+  isGenerationTimeoutError,
   MAX_DIARY_LENGTH,
 } from '../src/ai/diary-ai.js';
 
@@ -406,7 +411,7 @@ describe('isTransientAiError', () => {
   const highDemandError = {
     name: 'FirebaseError',
     code: 'fetch-error',
-    message: 'AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/odekake-pet/models/gemini-3.8-flash:generateContent: [500] This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
+    message: 'AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/odekake-pet/models/gemini-3.5-flash-lite:generateContent: [500] This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
   };
   // 2026-11-26 20:32 に実機で読めたモデル提供終了の 404 と同形
   const modelGoneError = {
@@ -585,5 +590,73 @@ describe('attemptWithRetry', () => {
     }
     assert.equal(calls, 2, '恒常エラーが出た時点で止まる');
     assert.equal(thrown, permanent, '恒常エラーが投げられる');
+  });
+});
+
+// ─── タイムアウト構造（試行ごと＋全体の締め切り） ────────────────────────────
+
+describe('タイムアウト構造', () => {
+  it('試行ごとの上限と全体の上限が想定値で、最悪ケースが全体の上限に収まる', () => {
+    assert.equal(PER_ATTEMPT_TIMEOUT_MS, 25_000, '試行ごとの上限は25秒');
+    assert.equal(OVERALL_GENERATION_TIMEOUT_MS, 90_000, '全体の上限は90秒');
+    const worstCase = PER_ATTEMPT_TIMEOUT_MS * MAX_GENERATION_ATTEMPTS
+      + RETRY_DELAYS_MS.reduce((sum, ms) => sum + ms, 0);
+    assert.ok(
+      worstCase <= OVERALL_GENERATION_TIMEOUT_MS,
+      `最悪ケース ${worstCase}ms が全体の上限以下`,
+    );
+  });
+
+  it('attemptTimeoutMs は残り時間が十分なら試行ごとの上限を返す', () => {
+    assert.equal(attemptTimeoutMs(60_000), PER_ATTEMPT_TIMEOUT_MS, '残り60秒なら25秒');
+    assert.equal(attemptTimeoutMs(90_000), PER_ATTEMPT_TIMEOUT_MS, '残り90秒でも25秒');
+  });
+
+  it('attemptTimeoutMs は残り時間が上限未満なら残り時間に丸める', () => {
+    assert.equal(attemptTimeoutMs(3_000), 3_000, '残り3秒なら3秒');
+    assert.equal(attemptTimeoutMs(1), 1, '残り1msなら1ms');
+  });
+
+  it('attemptTimeoutMs は残り時間が尽きていれば0を返す', () => {
+    assert.equal(attemptTimeoutMs(0), 0, '残り0なら0');
+    assert.equal(attemptTimeoutMs(-5_000), 0, '負の残りは0に丸める');
+  });
+
+  it('attemptTimeoutMs は不正な入力でも試行ごとの上限に倒す', () => {
+    assert.equal(attemptTimeoutMs(Number.NaN), PER_ATTEMPT_TIMEOUT_MS, 'NaN は上限');
+    assert.equal(attemptTimeoutMs(undefined), PER_ATTEMPT_TIMEOUT_MS, 'undefined は上限');
+  });
+
+  it('createGenerationTimeoutError は従来どおりの文言と識別名を持つ', () => {
+    const error = createGenerationTimeoutError();
+    assert.ok(error instanceof Error, 'Error である');
+    assert.equal(error.message, 'AI生成がタイムアウトしました', '診断で読める従来の文言');
+    assert.equal(error.name, 'GenerationTimeoutError', '識別名が付く');
+    assert.equal(isGenerationTimeoutError(error), true, 'タイムアウトと判定できる');
+  });
+
+  it('isGenerationTimeoutError は他の値では false', () => {
+    assert.equal(isGenerationTimeoutError(new Error('AI生成がタイムアウトしました')), false, '文言だけでは判定しない');
+    assert.equal(isGenerationTimeoutError(null), false, 'null は false');
+    assert.equal(isGenerationTimeoutError(undefined), false, 'undefined は false');
+    assert.equal(isGenerationTimeoutError('GenerationTimeoutError'), false, '文字列は false');
+  });
+
+  it('試行のタイムアウトは shouldRetry の合成で再試行される', async () => {
+    let calls = 0;
+    const result = await attemptWithRetry(
+      async () => {
+        calls++;
+        if (calls < 3) throw createGenerationTimeoutError();
+        return 'recovered';
+      },
+      {
+        delays: [10, 20],
+        sleep: () => Promise.resolve(),
+        shouldRetry: e => isTransientAiError(e) || isGenerationTimeoutError(e),
+      },
+    );
+    assert.equal(result, 'recovered', 'タイムアウトを挟んでも成功すれば結果が返る');
+    assert.equal(calls, 3, '試行は3回');
   });
 });

@@ -45,6 +45,14 @@
 * 単位に一時エラーだけの再試行を入れた（attemptWithRetry /
 * isTransientAiError を参照）。404・権限系などの恒常エラーは
 * 再試行しない。
+*
+* タイムアウト構造（2026-11-26 見直し）: 従来は試行ごとの20秒に加えて
+* 全体の上限が無く、遅い応答（500 が返るまで約18秒）×再試行＋最後の
+* 試行のタイムアウトが積み重なって全体が約60秒まで膨らんだ。
+* 見直し後は、試行ごとに効く PER_ATTEMPT_TIMEOUT_MS（25秒）と、
+* 生成全体の締め切り OVERALL_GENERATION_TIMEOUT_MS（90秒）の2段構え。
+* 試行のタイムアウト自体も再試行の対象とし、総時間は締め切りで
+* 抑える（attemptTimeoutMs / createGenerationTimeoutError を参照）。
 */
 
 // ─────────────────────────────────────────────
@@ -123,17 +131,41 @@ const FIREBASE_CDN_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER
  * されていたが、2026-11-26 の実機確認では 404
  * （"This model models/gemini-2.5-flash is no longer available to…"、
  * 新規プロジェクトでは利用不可とみられる）になった。
- * このため、公式モデル一覧（firebase.google.com/docs/ai-logic/models、
- * 2026-11-26 確認）で Stable・ルーティング／終了注記なし・
- * Blaze 課金要件なしの現行標準として載っている
- * gemini-3.8-flash（2026-09-02 リリース）を指定する。
- * 3.7／3.6／3.5 の各 Flash と 2.5 Pro の「Replacement」先にも
- * gemini-3.8-flash が挙げられている。
+ * 次に指定した gemini-3.8-flash は有効でリクエストは届いたが、
+ * 高負荷の 500（high demand）と応答の遅さが続いた（2026-11-26 実機）。
+ * 日記は100文字程度の生成なので lite で十分と判断し、
+ * gemini-3.5-flash-lite へ差し替える。公式モデル一覧
+ * （firebase.google.com/docs/ai-logic/models、2026-11-26 再確認）で
+ * Gemini Developer API・Agent Platform の両欄とも Shutdown date なし、
+ * Release stage: Stable（2026-07-21 リリース）、Blaze 課金必須の
+ * 脚注（脚注1）なし。3.1-flash-lite／2.5-flash／2.5-flash-lite／
+ * 2.0 系の「Replacement」先にも指定されている現行の標準 lite。
  */
-const CLOUD_MODEL_NAME = 'gemini-3.8-flash';
+const CLOUD_MODEL_NAME = 'gemini-3.5-flash-lite';
 
-/** 生成のタイムアウト（ミリ秒）。超えたらテンプレへ落ちる */
-const GENERATION_TIMEOUT_MS = 20_000;
+/**
+ * 1試行あたりの生成タイムアウト（ミリ秒）。
+ * 再試行の各試行ごとに新しく計り直す（attemptTimeoutMs で全体の
+ * 残り時間に丸める）。試行がこの時間を超えたら、その試行は
+ * タイムアウトとして打ち切る（再試行の対象。generateWithFirebase
+ * の shouldRetry を参照）。
+ */
+export const PER_ATTEMPT_TIMEOUT_MS = 25_000;
+
+/**
+ * 生成全体の上限（ミリ秒）。generateWithFirebase の開始時点から数え、
+ * デバイスモデル初期化の待ち・全試行・再試行の待ち時間をすべて
+ * 含めてこの時間を超えない（締め切り方式。attemptTimeoutMs を参照）。
+ * 最悪ケースの内訳: 試行 25秒×3回＋再試行の待ち 2秒＋5秒＝82秒 ≤ 90秒。
+ */
+export const OVERALL_GENERATION_TIMEOUT_MS = 90_000;
+
+/**
+ * デバイスモデル初期化のタイムアウト（ミリ秒）。
+ * 初期化は失敗しても生成を継続する一方通行の処理なので、
+ * 生成側のタイムアウトとは分けて持つ（値は従来どおり20秒）。
+ */
+const DEVICE_INIT_TIMEOUT_MS = 20_000;
 
 /**
 * 一時エラー再試行の待ち時間（ミリ秒）。
@@ -433,6 +465,46 @@ await sleep(delays[attempt]);
 throw lastError;
 }
 
+/**
+* 生成タイムアウトのエラーを作る。
+* message は従来どおり「AI生成がタイムアウトしました」（診断表示で
+* そのまま読める文言を維持する）。再試行判定で識別できるよう、
+* name に 'GenerationTimeoutError' を付ける。
+*
+* @returns {Error}
+*/
+export function createGenerationTimeoutError() {
+const error = new Error('AI生成がタイムアウトしました');
+error.name = 'GenerationTimeoutError';
+return error;
+}
+
+/**
+* エラーが生成タイムアウト（createGenerationTimeoutError 由来）かを判定する。
+* エラーでない値でも例外にしない。
+*
+* @param {*} error - 捕まえた値
+* @returns {boolean}
+*/
+export function isGenerationTimeoutError(error) {
+return !!error && error.name === 'GenerationTimeoutError';
+}
+
+/**
+* その試行に使えるタイムアウト時間（ミリ秒）を決める。
+* 1試行の上限（PER_ATTEMPT_TIMEOUT_MS）と全体の残り時間の小さい方。
+* 残り時間が無い・負の場合は 0（その試行は即タイムアウトになる）。
+*
+* @param {number} remainingMs - 生成全体の締め切りまでの残り時間
+* @returns {number}
+*/
+export function attemptTimeoutMs(remainingMs) {
+if (typeof remainingMs!== 'number' || Number.isNaN(remainingMs)) {
+return PER_ATTEMPT_TIMEOUT_MS;
+}
+return Math.max(0, Math.min(PER_ATTEMPT_TIMEOUT_MS, remainingMs));
+}
+
 // ─────────────────────────────────────────────
 // 失敗理由の保持（診断用）
 // ─────────────────────────────────────────────
@@ -504,7 +576,7 @@ model.initializeDeviceModel(),
 new Promise((_, reject) => {
 timer = setTimeout(
 () => reject(new Error('デバイスモデルの初期化がタイムアウトしました')),
-GENERATION_TIMEOUT_MS,
+DEVICE_INIT_TIMEOUT_MS,
 );
 }),
 ]);
@@ -587,22 +659,34 @@ return cachedModel;
 */
 async function generateWithFirebase(prompt) {
 const model = await loadFirebaseModel();
+// 生成全体の締め切り。デバイスモデル初期化の待ちもここから数える
+const deadline = Date.now() + OVERALL_GENERATION_TIMEOUT_MS;
 // 公式ハイブリッド手順 Step 6: 生成の前にデバイスモデルを初期化する
 // （1回だけ・失敗しても生成は継続する）
 await ensureDeviceModelInitialized(model);
 // 再試行は生成の試行単位で入れる。各試行の中では従来どおり
 // prefer_on_device のハイブリッド（オンデバイス→クラウド）が走るため、
-// 試行順の意味は壊れない。一時エラー（モデル高負荷など）だけを
-// 最大3回まで再試行し、恒常エラーは即テンプレへ落ちる
+// 試行順の意味は壊れない。一時エラー（モデル高負荷など）と試行単位の
+// タイムアウトだけを最大3回まで再試行し、恒常エラーは即テンプレへ落ちる。
+// タイムアウトは試行ごとに計り直し、全体の締め切り（90秒）で丸めるため、
+// 遅い応答と再試行が積み重なっても総時間は上限を超えない
 return attemptWithRetry(async () => {
+const timeoutMs = attemptTimeoutMs(deadline - Date.now());
+let timer = null;
 const timeout = new Promise((_, reject) => {
-setTimeout(() => reject(new Error('AI生成がタイムアウトしました')), GENERATION_TIMEOUT_MS);
+timer = setTimeout(() => reject(createGenerationTimeoutError()), timeoutMs);
 });
+try {
 const result = await Promise.race([model.generateContent(prompt), timeout]);
 return {
 text: result.response.text(),
 inferenceSource: result.response.inferenceSource,
 };
+} finally {
+if (timer!== null) clearTimeout(timer);
+}
+}, {
+shouldRetry: e => isTransientAiError(e) || isGenerationTimeoutError(e),
 });
 }
 
