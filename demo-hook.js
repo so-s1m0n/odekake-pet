@@ -76,10 +76,7 @@ if (['panel', 'odekake', 'privacy', 'album', 'footprints', 'code-modal', 'friend
 }
 if (shot === 'panel' || shot === 'footprints') seedFootprints();
 if (shot === 'card') {
-  // ペットは「おでかけ中（visiting）」で置く。帰宅可能な Visit と組になる
-  // 実アプリの状態は visiting であり、起動時帰宅処理は
-  // visiting → returning → home の遷移を前提とする（home だと例外で真っ白になる）
-  seedPet('visiting');
+  seedPet('home');
   seedMemory();
   saveSettings({ shareMemoryWithCloud: true }); // 記憶の文脈つきで生成させる
   seedReturnableVisit();
@@ -89,7 +86,7 @@ if (shot === 'waiting') {
   saveCurrentVisit(createVisit('hoshikuzu-kobo'));
 }
 if (shot === 'homecoming') {
-  seedPet('visiting'); // 理由は card と同じ（起動時帰宅処理の遷移前提）
+  seedPet('home');
   seedMemory();
   seedReturnableVisit();
 }
